@@ -21,15 +21,19 @@ def main(page: ft.Page):
     theme_pref = db.get_theme_mode()
     page.theme_mode = ft.ThemeMode.DARK if theme_pref == "dark" else ft.ThemeMode.LIGHT
     
-    # Configuración de tamaño móvil refinado y moderno
+    # Configuración de tamaño móvil refinado (proporción smartphone 380x720 para encajar en cualquier monitor)
     try:
-        page.window.width = 412
-        page.window.height = 890
+        page.window.width = 380
+        page.window.height = 720
+        page.window.min_width = 340
+        page.window.min_height = 580
         page.window.resizable = True
         page.window.center()
     except Exception:
-        page.window_width = 412
-        page.window_height = 890
+        page.window_width = 380
+        page.window_height = 720
+        page.window_min_width = 340
+        page.window_min_height = 580
         page.window_resizable = True
 
     page.padding = 0
@@ -255,56 +259,56 @@ def main(page: ft.Page):
             
         onboarding_view = ft.Container(
             content=ft.Column([
-                ft.Container(height=40),
+                ft.Container(height=15),
                 # Glowing Hero Icon
                 ft.Container(
-                    content=ft.Icon(ft.Icons.SPA_ROUNDED, size=70, color=theme.PRIMARY_LIGHT),
-                    width=130,
-                    height=130,
-                    border_radius=65,
+                    content=ft.Icon(ft.Icons.SPA_ROUNDED, size=52, color=theme.PRIMARY_LIGHT),
+                    width=96,
+                    height=96,
+                    border_radius=48,
                     bgcolor=theme.PRIMARY_BG,
                     border=ft.border.all(2, theme.PRIMARY),
                     alignment=ft.Alignment(0, 0),
                     shadow=ft.BoxShadow(
-                        blur_radius=30,
+                        blur_radius=25,
                         color=theme.with_opacity(0.35, theme.PRIMARY),
-                        offset=ft.Offset(0, 8)
+                        offset=ft.Offset(0, 6)
                     ),
                     animate=theme.STANDARD_ANIMATION,
                 ),
-                ft.Container(height=24),
-                ft.Text("Gestor de Calorías", size=28, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY, text_align=ft.TextAlign.CENTER),
+                ft.Container(height=12),
+                ft.Text("Gestor de Calorías", size=24, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY, text_align=ft.TextAlign.CENTER),
                 ft.Container(
-                    content=theme.badge("Edición Gastronomía Regional", icon=ft.Icons.VERIFIED_ROUNDED, bg_color="#064E3B", text_color=theme.PRIMARY_LIGHT, font_size=12),
-                    margin=ft.Margin(0, 4, 0, 8)
+                    content=theme.badge("Edición Gastronomía Regional", icon=ft.Icons.VERIFIED_ROUNDED, bg_color="#064E3B", text_color=theme.PRIMARY_LIGHT, font_size=11),
+                    margin=ft.Margin(0, 2, 0, 4)
                 ),
                 ft.Text(
-                    "Control nutricional de alta precisión para alimentos del Litoral y tradicionales. Fórmulas científicas Mifflin-St Jeor, hidratación inteligente y cálculo de merma.", 
-                    color=theme.TEXT_SECONDARY, size=13.5, text_align=ft.TextAlign.CENTER
+                    "Control nutricional de alta precisión para alimentos del Litoral y tradicionales. Fórmulas científicas Mifflin-St Jeor.", 
+                    color=theme.TEXT_SECONDARY, size=12, text_align=ft.TextAlign.CENTER
                 ),
-                ft.Container(height=24),
+                ft.Container(height=10),
                 # Feature Cards Preview
                 ft.Container(
                     content=ft.Column([
                         ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=16, color=theme.PRIMARY),
-                            ft.Text("Catálogo autóctono: Chipa, Mbeyú, Reviro, Mandioca", size=12, color=theme.TEXT_PRIMARY)
-                        ], spacing=8),
+                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=14, color=theme.PRIMARY),
+                            ft.Text("Catálogo: Chipa, Mbeyú, Reviro, Mandioca", size=11, color=theme.TEXT_PRIMARY)
+                        ], spacing=6),
                         ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=16, color=theme.COLOR_PROTEIN_LIGHT),
-                            ft.Text("Desglose visual de macronutrientes a 60 fps", size=12, color=theme.TEXT_PRIMARY)
-                        ], spacing=8),
+                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=14, color=theme.COLOR_PROTEIN_LIGHT),
+                            ft.Text("Desglose visual de macronutrientes", size=11, color=theme.TEXT_PRIMARY)
+                        ], spacing=6),
                         ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=16, color=theme.COLOR_WATER_LIGHT),
-                            ft.Text("Registro rápido de hidratación con metas personalizadas", size=12, color=theme.TEXT_PRIMARY)
-                        ], spacing=8),
-                    ], spacing=10),
+                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=14, color=theme.COLOR_WATER_LIGHT),
+                            ft.Text("Registro rápido de hidratación (+250 ml)", size=11, color=theme.TEXT_PRIMARY)
+                        ], spacing=6),
+                    ], spacing=7),
                     bgcolor=theme.SURFACE,
-                    padding=18,
-                    border_radius=16,
+                    padding=12,
+                    border_radius=14,
                     border=ft.border.all(1, theme.SURFACE_BORDER)
                 ),
-                ft.Container(expand=True),
+                ft.Container(height=12),
                 ft.ElevatedButton(
                     "Comenzar Ahora", 
                     icon=ft.Icons.ARROW_FORWARD_ROUNDED,
@@ -312,9 +316,9 @@ def main(page: ft.Page):
                     style=theme.get_button_style(), 
                     width=float('inf')
                 ),
-                ft.Container(height=24),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-            padding=26,
+                ft.Container(height=10),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO),
+            padding=ft.Padding(left=18, top=10, right=18, bottom=10),
             expand=True,
             alignment=ft.Alignment(0, 0),
             opacity=0,

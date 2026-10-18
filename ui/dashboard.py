@@ -40,30 +40,30 @@ def get_dashboard_view(page: ft.Page, navigate_to_diary, refresh_dashboard):
                 value=cal_progress,
                 color=cal_color,
                 bgcolor=theme.SURFACE_VARIANT,
-                width=170,
-                height=170,
-                stroke_width=14,
+                width=150,
+                height=150,
+                stroke_width=12,
                 stroke_cap=ft.StrokeCap.ROUND,
                 animate_opacity=theme.STANDARD_ANIMATION,
             ),
             ft.Container(
                 content=ft.Column([
-                    ft.Text(f"{int(total_cal)}", size=34, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY),
-                    ft.Text(f"de {target_cal} kcal", size=13, color=theme.TEXT_SECONDARY, weight=ft.FontWeight.W_500),
+                    ft.Text(f"{int(total_cal)}", size=30, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY),
+                    ft.Text(f"de {target_cal} kcal", size=12, color=theme.TEXT_SECONDARY, weight=ft.FontWeight.W_500),
                     ft.Container(
                         content=theme.badge(
                             f"{abs(remaining_cal)} kcal {'restantes' if remaining_cal >= 0 else 'excedidas'}",
                             icon=ft.Icons.BOLT_ROUNDED if remaining_cal >= 0 else ft.Icons.WARNING_AMBER_ROUNDED,
                             bg_color=theme.PRIMARY_BG if remaining_cal >= 0 else theme.DANGER_BG,
                             text_color=theme.PRIMARY_LIGHT if remaining_cal >= 0 else theme.DANGER_LIGHT,
-                            font_size=11
+                            font_size=10
                         ),
-                        margin=ft.Margin(top=4, left=0, right=0, bottom=0)
+                        margin=ft.Margin(top=2, left=0, right=0, bottom=0)
                     )
                 ], alignment=ft.MainAxisAlignment.CENTER, horizontal_alignment=ft.CrossAxisAlignment.CENTER, spacing=1),
                 alignment=ft.Alignment(0, 0),
-                width=170,
-                height=170,
+                width=150,
+                height=150,
             )
         ],
         alignment=ft.Alignment(0, 0)

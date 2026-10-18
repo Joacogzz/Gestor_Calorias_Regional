@@ -557,9 +557,9 @@ def get_diary_view(page: ft.Page, navigate_back):
                 )
             ], spacing=6),
             filter_chips_row,
-            ft.Container(content=results_list, height=220)
+            ft.Container(content=results_list, height=170)
         ], spacing=10),
-        **theme.get_card_style(padding=16)
+        **theme.get_card_style(padding=14)
     )
 
     diary_card = ft.Container(
@@ -568,14 +568,13 @@ def get_diary_view(page: ft.Page, navigate_back):
                 theme.subheader_text("Registros de Hoy"),
                 ft.Icon(ft.Icons.CALENDAR_TODAY_ROUNDED, size=16, color=theme.TEXT_SECONDARY)
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-            ft.Container(content=diary_list, height=260)
+            ft.Container(content=diary_list, height=200)
         ], spacing=8),
-        **theme.get_card_style(padding=16),
-        expand=True
+        **theme.get_card_style(padding=14)
     )
 
     return ft.Column([
         header_bar,
         search_card,
         diary_card
-    ], expand=True, spacing=6)
+    ], expand=True, spacing=6, scroll=ft.ScrollMode.AUTO)
