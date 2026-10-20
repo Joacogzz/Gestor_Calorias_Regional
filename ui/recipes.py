@@ -4,22 +4,31 @@ from ui import theme
 
 def get_recipes_view(page: ft.Page):
     recipe_name_input = ft.TextField(
-        **theme.get_input_style("Nombre de la Receta (ej. Guiso Misionero)", ft.Icons.RESTAURANT_MENU_ROUNDED),
+        **theme.get_input_style("Nombre de la Receta", ft.Icons.RESTAURANT_MENU_ROUNDED),
+        hint_text="ej. Guiso de Arroz, Reviro con Huevo",
         expand=True
     )
     portions_input = ft.TextField(
         **theme.get_input_style("Porciones", ft.Icons.PIE_CHART_ROUNDED), 
         value="1", 
         keyboard_type=ft.KeyboardType.NUMBER,
-        width=120
+        width=110
     )
+    
+    portions_row = ft.Row([
+        portions_input,
+        ft.Column([
+            ft.Text("Rendimiento total de porciones", size=12, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY),
+            ft.Text("Calcula automáticamente el aporte por cada plato individual", size=11, color=theme.TEXT_SECONDARY)
+        ], spacing=1, expand=True)
+    ], spacing=12, vertical_alignment=ft.CrossAxisAlignment.CENTER)
     
     search_input = ft.TextField(
         **theme.get_input_style("Buscar ingrediente para la receta", ft.Icons.SEARCH_ROUNDED), 
         expand=True
     )
-    results_list = ft.ListView(height=160, spacing=6)
-    ingredients_list = ft.ListView(height=170, spacing=8)
+    results_list = ft.ListView(height=150, spacing=6)
+    ingredients_list = ft.ListView(height=160, spacing=8)
     my_recipes_list = ft.ListView(height=240, spacing=8)
     
     # Estado de la receta en construcción
@@ -28,11 +37,11 @@ def get_recipes_view(page: ft.Page):
     # -------------------------------------------------------------
     # 1. RESUMEN EN 2 COLUMNAS (TOTAL VS PORCIÓN CON MERMA)
     # -------------------------------------------------------------
-    total_cal_val = ft.Text("0 kcal", size=16, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY)
-    total_macros_val = ft.Text("P: 0g | C: 0g | G: 0g", size=11, color=theme.TEXT_SECONDARY)
+    total_cal_val = ft.Text("0 kcal", size=15, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY)
+    total_macros_val = ft.Text("P: 0g • C: 0g • G: 0g", size=10.5, color=theme.TEXT_SECONDARY)
     
-    portion_cal_val = ft.Text("0 kcal", size=18, weight=ft.FontWeight.W_800, color=theme.PRIMARY_LIGHT)
-    portion_macros_val = ft.Text("P: 0g | C: 0g | G: 0g", size=11, color=theme.PRIMARY_LIGHT)
+    portion_cal_val = ft.Text("0 kcal", size=17, weight=ft.FontWeight.W_800, color=theme.PRIMARY_LIGHT)
+    portion_macros_val = ft.Text("P: 0g • C: 0g • G: 0g", size=10.5, color=theme.PRIMARY_LIGHT)
 
     def update_totals(e=None):
         total_cal = 0
@@ -41,7 +50,6 @@ def get_recipes_view(page: ft.Page):
         total_fat = 0
         
         for ing in current_ingredients:
-            # Los macros aportados por el ingrediente crudo se mantienen
             raw_factor = ing['amount_g'] / 100.0
             total_cal += ing['food']['calories_per_100g'] * raw_factor
             total_prot += ing['food']['protein_per_100g'] * raw_factor
@@ -125,33 +133,33 @@ def get_recipes_view(page: ft.Page):
             c_factor = raw_g / 100.0
             ing_cal = int(ing['food']['calories_per_100g'] * c_factor)
             
-            # Badge de merma
-            merma_pill = theme.badge("Merma -25%", icon=ft.Icons.LOCAL_FIRE_DEPARTMENT_ROUNDED, bg_color=theme.COLOR_FAT_BG, text_color=theme.COLOR_FAT_LIGHT, font_size=10) if has_merma else ft.Container()
+            # Badge de merma desahogado
+            merma_pill = theme.badge("Merma -25%", icon=ft.Icons.TUNE_ROUNDED, bg_color=theme.COLOR_FAT_BG, text_color=theme.COLOR_FAT_LIGHT, font_size=10) if has_merma else ft.Container()
             
             ingredients_list.controls.append(
                 ft.Container(
-                    content=ft.Row([
-                        ft.Column([
+                    content=ft.Column([
+                        ft.Row([
                             ft.Row([
                                 ft.Text(food_name, size=13, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY),
                                 merma_pill
-                            ], spacing=6),
-                            ft.Row([
-                                ft.Text(f"{raw_g:g}{unit} crudo", size=11, color=theme.TEXT_SECONDARY),
-                                ft.Text(f"→ {cooked_g:g}{unit} cocido" if has_merma else "", size=11, color=theme.COLOR_FAT_LIGHT if has_merma else theme.TEXT_MUTED),
-                                ft.Text("•", size=10, color=theme.TEXT_MUTED),
-                                ft.Text(f"{ing_cal} kcal", size=11, weight=ft.FontWeight.W_700, color=theme.PRIMARY_LIGHT),
-                            ], spacing=4)
-                        ], expand=True, spacing=2),
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE_ROUNDED, 
-                            icon_color=theme.DANGER_LIGHT, 
-                            icon_size=20,
-                            tooltip="Quitar ingrediente",
-                            on_click=lambda ev, idx=i: remove_ingredient(idx)
-                        )
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    padding=ft.Padding(left=12, top=8, right=8, bottom=8),
+                            ], spacing=6, wrap=True, expand=True),
+                            ft.IconButton(
+                                ft.Icons.DELETE_OUTLINE_ROUNDED, 
+                                icon_color=theme.DANGER_LIGHT, 
+                                icon_size=18,
+                                tooltip="Quitar ingrediente",
+                                on_click=lambda ev, idx=i: remove_ingredient(idx)
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                        ft.Row([
+                            ft.Text(f"{raw_g:g}{unit} crudo", size=11, color=theme.TEXT_SECONDARY),
+                            ft.Text(f"→ {cooked_g:g}{unit} cocido" if has_merma else "", size=11, color=theme.COLOR_FAT_LIGHT if has_merma else theme.TEXT_MUTED),
+                            ft.Text("•", size=10, color=theme.TEXT_MUTED),
+                            ft.Text(f"{ing_cal} kcal", size=11, weight=ft.FontWeight.W_700, color=theme.PRIMARY_LIGHT),
+                        ], spacing=4)
+                    ], spacing=2),
+                    padding=ft.Padding(left=12, top=8, right=6, bottom=8),
                     bgcolor=theme.SURFACE_VARIANT,
                     border_radius=12,
                     border=ft.border.all(1, theme.SURFACE_BORDER)
@@ -164,11 +172,11 @@ def get_recipes_view(page: ft.Page):
         render_ingredients()
 
     # -------------------------------------------------------------
-    # 3. BÚSQUEDA DE INGREDIENTES
+    # 3. BÚSQUEDA DE INGREDIENTES OPTIMIZADA
     # -------------------------------------------------------------
     def search_click(e=None):
-        query = search_input.value or ""
-        results = db.search_foods(query)
+        query = (search_input.value or "").strip()
+        results = db.search_foods(query=query, limit=100)
         results_list.controls.clear()
         
         if not results:
@@ -191,17 +199,17 @@ def get_recipes_view(page: ft.Page):
                             ft.Row([
                                 ft.Text(f['name'], size=13, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY),
                                 theme.regional_badge() if is_reg else ft.Container()
-                            ], spacing=6),
+                            ], spacing=6, wrap=True),
                             ft.Text(f"{f['calories_per_100g']} kcal / 100g", size=11, color=theme.TEXT_MUTED),
                         ], expand=True, spacing=1),
                         ft.IconButton(
                             ft.Icons.ADD_CIRCLE_OUTLINE_ROUNDED, 
                             icon_color=theme.PRIMARY_LIGHT, 
-                            icon_size=24,
+                            icon_size=22,
                             tooltip="Añadir a la receta",
                             on_click=lambda ev, f_data=f: open_add_dialog(f_data)
                         )
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER),
                     on_click=lambda ev, f_data=f: open_add_dialog(f_data),
                     padding=ft.Padding(left=10, top=6, right=6, bottom=6),
                     border_radius=10,
@@ -232,6 +240,10 @@ def get_recipes_view(page: ft.Page):
         def confirm_add(e):
             try:
                 g = float(amount_input.value)
+                if g <= 0:
+                    amount_input.error_text = "Ingresa una cantidad mayor a 0"
+                    page.update()
+                    return
                 current_ingredients.append({
                     'food': f_data, 
                     'amount_g': g, 
@@ -258,7 +270,7 @@ def get_recipes_view(page: ft.Page):
                 ft.Container(
                     content=ft.Column([
                         cooking_factor_cb,
-                        ft.Text("Útil para carnes y verduras que evaporan agua al freír o hervir.", size=10, color=theme.TEXT_MUTED)
+                        ft.Text("Para carnes y vegetales que evaporan agua al freír o hervir.", size=10, color=theme.TEXT_MUTED)
                     ], spacing=2),
                     bgcolor=theme.SURFACE_VARIANT,
                     padding=10,
@@ -353,34 +365,40 @@ def get_recipes_view(page: ft.Page):
         for r in recipes:
             my_recipes_list.controls.append(
                 ft.Container(
-                    content=ft.Row([
-                        ft.Column([
+                    content=ft.Column([
+                        ft.Row([
                             ft.Row([
                                 ft.Text(r['name'], size=13.5, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY),
                                 theme.recipe_badge()
-                            ], spacing=6),
-                            ft.Row([
-                                ft.Text(f"{int(r['calories_per_100g'])} kcal / porción", size=12, weight=ft.FontWeight.W_700, color=theme.PRIMARY_LIGHT),
-                                ft.Text("•", size=10, color=theme.TEXT_MUTED),
-                                ft.Text(f"P: {int(r['protein_per_100g'])}g", size=11, color=theme.COLOR_PROTEIN_LIGHT),
-                                ft.Text(f"C: {int(r['carbs_per_100g'])}g", size=11, color=theme.COLOR_CARBS_LIGHT),
-                                ft.Text(f"G: {int(r['fat_per_100g'])}g", size=11, color=theme.COLOR_FAT_LIGHT),
-                            ], spacing=4)
-                        ], expand=True, spacing=2),
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE_ROUNDED, 
-                            icon_color=theme.DANGER_LIGHT, 
-                            icon_size=20,
-                            tooltip="Eliminar receta",
-                            on_click=lambda ev, rid=r['id']: delete_recipe_click(rid)
-                        )
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    padding=ft.Padding(left=14, top=10, right=10, bottom=10),
+                            ], spacing=6, wrap=True, expand=True),
+                            ft.IconButton(
+                                ft.Icons.DELETE_OUTLINE_ROUNDED, 
+                                icon_color=theme.DANGER_LIGHT, 
+                                icon_size=18,
+                                tooltip="Eliminar receta",
+                                on_click=lambda ev, rid=r['id']: delete_recipe_click(rid)
+                            )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                        ft.Row([
+                            ft.Container(
+                                content=ft.Text(f"{int(r['calories_per_100g'])} kcal / porción", size=11, weight=ft.FontWeight.W_700, color=theme.PRIMARY_LIGHT),
+                                bgcolor=theme.PRIMARY_BG,
+                                padding=ft.Padding(left=6, top=2, right=6, bottom=2),
+                                border_radius=6,
+                            ),
+                            ft.Text("•", size=10, color=theme.TEXT_MUTED),
+                            ft.Text(f"P: {int(r['protein_per_100g'])}g", size=11, color=theme.COLOR_PROTEIN_LIGHT, weight=ft.FontWeight.W_600),
+                            ft.Text(f"C: {int(r['carbs_per_100g'])}g", size=11, color=theme.COLOR_CARBS_LIGHT, weight=ft.FontWeight.W_600),
+                            ft.Text(f"G: {int(r['fat_per_100g'])}g", size=11, color=theme.COLOR_FAT_LIGHT, weight=ft.FontWeight.W_600),
+                        ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    ], spacing=4),
+                    padding=ft.Padding(left=12, top=10, right=8, bottom=10),
                     bgcolor=theme.SURFACE_VARIANT,
-                    border_radius=14,
+                    border_radius=12,
                     border=ft.border.all(1, theme.SURFACE_BORDER)
                 )
             )
+        my_recipes_list.controls.append(ft.Container(height=24))
         page.update()
         
     def delete_recipe_click(recipe_id):
@@ -393,27 +411,29 @@ def get_recipes_view(page: ft.Page):
     render_my_recipes()
     search_input.on_change = search_click
     search_input.on_submit = search_click
-    search_input.on_focus = search_click
+    search_click(None)
 
     # Banner informativo de merma
     merma_info_card = ft.Container(
         content=ft.Row([
-            ft.Icon(ft.Icons.INFO_OUTLINE_ROUNDED, color=theme.SECONDARY, size=18),
-            ft.Text("Cálculo de Merma: Al cocinarse, carnes y vegetales pierden peso por evaporación concentrando sus calorías por cada 100g.", size=11, color=theme.TEXT_SECONDARY, expand=True)
+            ft.Icon(ft.Icons.INFO_OUTLINE_ROUNDED, color=theme.SECONDARY, size=16),
+            ft.Text("Cálculo de Merma: Al cocinarse, carnes y vegetales pierden peso por evaporación concentrando sus nutrientes por cada 100g.", size=11, color=theme.TEXT_SECONDARY, expand=True)
         ], spacing=8),
         bgcolor=theme.SURFACE_VARIANT,
         padding=10,
         border_radius=12,
         border=ft.border.all(1, theme.SURFACE_BORDER),
-        margin=ft.Margin(0, 4, 0, 8)
+        margin=ft.Margin(0, 2, 0, 4)
     )
 
     recipes_content = ft.Column([
         ft.Container(
             content=ft.Column([
                 theme.subheader_text("Información de la Receta"),
-                ft.Row([recipe_name_input, portions_input], spacing=8),
+                recipe_name_input,
+                portions_row,
                 merma_info_card,
+                ft.Container(height=2),
                 theme.subheader_text("Buscar Ingredientes"),
                 ft.Row([
                     search_input, 
@@ -425,13 +445,13 @@ def get_recipes_view(page: ft.Page):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12))
                     )
                 ], spacing=6),
-                ft.Container(content=results_list, height=130),
+                ft.Container(content=results_list, height=270),
                 theme.subheader_text("Ingredientes Agregados"),
-                ft.Container(content=ingredients_list, height=140),
+                ft.Container(content=ingredients_list, height=150),
                 summary_two_columns,
                 ft.ElevatedButton(
                     "Guardar Receta en Catálogo", 
-                    icon=ft.Icons.SAVE_ROUNDED,
+                    icon=ft.Icons.SAVE_ROUNDED, 
                     on_click=save_recipe_click, 
                     style=theme.get_button_style(), 
                     width=float('inf')
@@ -439,23 +459,20 @@ def get_recipes_view(page: ft.Page):
             ], spacing=10),
             **theme.get_card_style(padding=16)
         ),
-        ft.Container(height=8),
+        ft.Container(height=6),
         ft.Container(
             content=ft.Column([
-                ft.Row([
-                    theme.subheader_text("Mis Recetas Creadas"),
-                    theme.badge("Catálogo propio", icon=ft.Icons.BOOKMARK_ROUNDED, bg_color=theme.SURFACE_VARIANT, text_color=theme.TEXT_SECONDARY, font_size=10)
-                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                ft.Container(content=my_recipes_list, height=200)
+                theme.subheader_text("Mis Recetas Creadas"),
+                ft.Container(content=my_recipes_list, height=220)
             ], spacing=8),
             **theme.get_card_style(padding=16)
         )
-    ], expand=True, scroll=ft.ScrollMode.AUTO)
+    ], expand=True, scroll=ft.ScrollMode.HIDDEN)
 
     # -------------------------------------------------------------
     # 5. PESTAÑA: MIS ALIMENTOS MANUALES (CRUD)
     # -------------------------------------------------------------
-    custom_foods_list = ft.ListView(expand=True, spacing=10)
+    custom_foods_list = ft.ListView(expand=True, spacing=8)
 
     def render_custom_foods():
         custom_foods_list.controls.clear()
@@ -478,38 +495,46 @@ def get_recipes_view(page: ft.Page):
         for f in foods:
             custom_foods_list.controls.append(
                 ft.Container(
-                    content=ft.Row([
-                        ft.Column([
-                            ft.Text(f['name'], size=13.5, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY),
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Text(f['name'], size=13.5, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY, expand=True),
                             ft.Row([
-                                ft.Text(f"{f['calories_per_100g']} kcal", size=12, weight=ft.FontWeight.W_700, color=theme.PRIMARY_LIGHT),
-                                ft.Text("•", size=10, color=theme.TEXT_MUTED),
-                                ft.Text(f"P: {int(f['protein_per_100g'])}g", size=11, color=theme.COLOR_PROTEIN_LIGHT),
-                                ft.Text(f"C: {int(f['carbs_per_100g'])}g", size=11, color=theme.COLOR_CARBS_LIGHT),
-                                ft.Text(f"G: {int(f['fat_per_100g'])}g", size=11, color=theme.COLOR_FAT_LIGHT),
-                            ], spacing=4)
-                        ], expand=True, spacing=2),
-                        ft.IconButton(
-                            ft.Icons.EDIT_ROUNDED, 
-                            icon_color=theme.PRIMARY_LIGHT, 
-                            icon_size=20,
-                            tooltip="Editar",
-                            on_click=lambda ev, f_data=f: open_edit_food_dialog(f_data)
-                        ),
-                        ft.IconButton(
-                            ft.Icons.DELETE_OUTLINE_ROUNDED, 
-                            icon_color=theme.DANGER_LIGHT, 
-                            icon_size=20,
-                            tooltip="Eliminar",
-                            on_click=lambda ev, fid=f['id']: delete_food_click(fid)
-                        )
-                    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                    padding=ft.Padding(left=14, top=10, right=10, bottom=10),
+                                ft.IconButton(
+                                    ft.Icons.EDIT_ROUNDED, 
+                                    icon_color=theme.PRIMARY_LIGHT, 
+                                    icon_size=18, 
+                                    tooltip="Editar",
+                                    on_click=lambda ev, f_data=f: open_edit_food_dialog(f_data)
+                                ),
+                                ft.IconButton(
+                                    ft.Icons.DELETE_OUTLINE_ROUNDED, 
+                                    icon_color=theme.DANGER_LIGHT, 
+                                    icon_size=18, 
+                                    tooltip="Eliminar",
+                                    on_click=lambda ev, fid=f['id']: delete_food_click(fid)
+                                )
+                            ], spacing=0)
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                        ft.Row([
+                            ft.Container(
+                                content=ft.Text(f"{f['calories_per_100g']} kcal", size=11, weight=ft.FontWeight.W_700, color=theme.PRIMARY_LIGHT),
+                                bgcolor=theme.PRIMARY_BG,
+                                padding=ft.Padding(left=6, top=2, right=6, bottom=2),
+                                border_radius=6,
+                            ),
+                            ft.Text("•", size=10, color=theme.TEXT_MUTED),
+                            ft.Text(f"P: {int(f['protein_per_100g'])}g", size=11, color=theme.COLOR_PROTEIN_LIGHT, weight=ft.FontWeight.W_600),
+                            ft.Text(f"C: {int(f['carbs_per_100g'])}g", size=11, color=theme.COLOR_CARBS_LIGHT, weight=ft.FontWeight.W_600),
+                            ft.Text(f"G: {int(f['fat_per_100g'])}g", size=11, color=theme.COLOR_FAT_LIGHT, weight=ft.FontWeight.W_600),
+                        ], spacing=6, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                    ], spacing=4),
+                    padding=ft.Padding(left=12, top=10, right=8, bottom=10),
                     bgcolor=theme.SURFACE_VARIANT,
-                    border_radius=14,
+                    border_radius=12,
                     border=ft.border.all(1, theme.SURFACE_BORDER)
                 )
             )
+        custom_foods_list.controls.append(ft.Container(height=32))
         page.update()
 
     def delete_food_click(food_id):
@@ -571,13 +596,13 @@ def get_recipes_view(page: ft.Page):
             style=theme.get_button_style(), 
             width=float('inf')
         ),
-        ft.Container(height=8),
+        ft.Container(height=6),
         ft.Container(
             content=custom_foods_list,
             **theme.get_card_style(padding=16),
             expand=True
         )
-    ], expand=True, scroll=ft.ScrollMode.AUTO)
+    ], expand=True, scroll=ft.ScrollMode.HIDDEN)
 
     render_custom_foods()
 

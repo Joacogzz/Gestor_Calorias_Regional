@@ -18,10 +18,19 @@ def main(page: ft.Page):
     # Configuración principal de la ventana
     page.title = "Gestor de Calorías Regional"
     page.window_icon = "icon.png"
-    theme_pref = db.get_theme_mode()
-    page.theme_mode = ft.ThemeMode.DARK if theme_pref == "dark" else ft.ThemeMode.LIGHT
+    page.theme_mode = ft.ThemeMode.DARK
     
-    # Configuración de tamaño móvil refinado (proporción smartphone 380x720 para encajar en cualquier monitor)
+    # Configuración de localización e idioma en español
+    page.locale_configuration = ft.LocaleConfiguration(
+        supported_locales=[
+            ft.Locale("es", "ES"),
+            ft.Locale("es", "AR"),
+            ft.Locale("es"),
+        ],
+        current_locale=ft.Locale("es", "ES"),
+    )
+    
+    # Proporción refinada (380x720 para encajar en cualquier monitor)
     try:
         page.window.width = 380
         page.window.height = 720
@@ -40,73 +49,47 @@ def main(page: ft.Page):
     page.fonts = {
         "Inter": "https://raw.githubusercontent.com/rsms/inter/master/docs/font-files/Inter-Regular.woff2"
     }
+    scrollbar_cfg = ft.ScrollbarTheme(
+        thumb_visibility=False,
+        track_visibility=False,
+        thickness=0,
+        radius=0,
+        interactive=False,
+    )
     page.theme = ft.Theme(
         color_scheme_seed=theme.PRIMARY,
         font_family="Inter",
         visual_density=ft.VisualDensity.STANDARD,
+        scrollbar_theme=scrollbar_cfg,
+    )
+    page.dark_theme = ft.Theme(
+        color_scheme_seed=theme.PRIMARY,
+        font_family="Inter",
+        visual_density=ft.VisualDensity.STANDARD,
+        scrollbar_theme=scrollbar_cfg,
     )
     # Fondo en tono Deep Obsidian evitando el negro plano puro
-    page.bgcolor = theme.BG_OBSIDIAN if page.theme_mode == ft.ThemeMode.DARK else "#F8FAFC"
-
-    # Encabezado superior premium
-    header_title = ft.Text("Gestor Regional", size=18, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY)
-    header_subtitle = ft.Text("Salud & Nutrición", size=11, color=theme.TEXT_SECONDARY)
-    
-    header_avatar = ft.Container(
-        content=ft.Icon(ft.Icons.PERSON_ROUNDED, size=18, color=theme.PRIMARY_LIGHT),
-        width=36,
-        height=36,
-        border_radius=18,
-        bgcolor=theme.PRIMARY_BG,
-        border=ft.border.all(1, theme.with_opacity(0.4, theme.PRIMARY_LIGHT)),
-        alignment=ft.Alignment(0, 0),
-        on_click=lambda _: show_profile(),
-        tooltip="Mi Perfil"
-    )
-
-    top_app_bar = ft.Container(
-        content=ft.Row([
-            ft.Row([
-                ft.Container(
-                    content=ft.Icon(ft.Icons.SPA_ROUNDED, size=20, color=theme.PRIMARY),
-                    width=38,
-                    height=38,
-                    border_radius=12,
-                    bgcolor=theme.SURFACE_VARIANT,
-                    border=ft.border.all(1, theme.SURFACE_BORDER),
-                    alignment=ft.Alignment(0, 0),
-                ),
-                ft.Column([
-                    header_title,
-                    header_subtitle
-                ], spacing=1, alignment=ft.MainAxisAlignment.CENTER),
-            ], spacing=10),
-            ft.Row([
-                theme.badge("Regional", icon=ft.Icons.LOCATION_ON_ROUNDED, bg_color="#064E3B", text_color=theme.PRIMARY_LIGHT),
-                header_avatar
-            ], spacing=8)
-        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-        padding=ft.Padding(left=18, top=12, right=18, bottom=12),
-        bgcolor=theme.SURFACE,
-        border=ft.Border(bottom=ft.BorderSide(1, theme.SURFACE_BORDER)),
-    )
+    page.bgcolor = theme.BG_OBSIDIAN
 
     # Área de contenido animada fluida
     content_area = ft.AnimatedSwitcher(
         content=ft.Container(),
         transition=ft.AnimatedSwitcherTransition.FADE,
-        duration=200,
-        reverse_duration=150,
+        duration=150,
+        reverse_duration=120,
         switch_in_curve=ft.AnimationCurve.EASE_OUT,
         switch_out_curve=ft.AnimationCurve.EASE_IN,
     )
     
-    # Contenedor principal con padding consistente
+    # Contenedor principal sin barras redundantes para maximizar espacio vertical
     main_container = ft.Container(
         content=content_area,
         expand=True,
-        padding=ft.Padding(left=16, top=14, right=16, bottom=14)
+        padding=ft.Padding(left=16, top=14, right=16, bottom=8)
     )
+
+    # Caché en memoria para transiciones de pestaña instantáneas (60 fps)
+    cached_views = {}
 
     def change_route(e):
         route = e.control.selected_index
@@ -158,47 +141,42 @@ def main(page: ft.Page):
         ]
     )
 
-    def update_header_info():
-        prof = db.get_profile()
-        if prof and 'name' in prof:
-            header_subtitle.value = f"Hola, {prof['name']} 👋"
-        else:
-            header_subtitle.value = "Salud & Nutrición"
-
     def show_dashboard():
-        update_header_info()
         content_area.content = dashboard.get_dashboard_view(page, show_diary, show_dashboard)
         bottom_nav.selected_index = 0
         page.update()
 
-    def show_diary():
-        update_header_info()
-        content_area.content = diary.get_diary_view(page, show_dashboard)
+    def show_diary(scroll_target=None):
+        view = diary.get_diary_view(page, show_dashboard, scroll_target=scroll_target)
+        content_area.content = view
         bottom_nav.selected_index = 1
         page.update()
+        if scroll_target == "hydration":
+            try:
+                view.scroll_to(key="water_card", duration=0)
+            except Exception:
+                pass
 
     def show_recipes():
-        update_header_info()
-        content_area.content = recipes.get_recipes_view(page)
+        if "recipes" not in cached_views:
+            cached_views["recipes"] = recipes.get_recipes_view(page)
+        content_area.content = cached_views["recipes"]
         bottom_nav.selected_index = 2
         page.update()
 
     def show_history():
-        update_header_info()
         content_area.content = history.get_history_view(page, show_history)
         bottom_nav.selected_index = 3
         page.update()
 
     def show_profile():
-        update_header_info()
         content_area.content = profile.get_profile_view(page, show_dashboard)
         bottom_nav.selected_index = 4
         page.update()
 
-    # Layout principal de la aplicación
+    # Layout principal de la aplicación sin barra superior duplicada
     main_layout = ft.Container(
         content=ft.Column([
-            top_app_bar,
             main_container,
             bottom_nav
         ], expand=True, spacing=0),
@@ -259,56 +237,32 @@ def main(page: ft.Page):
             
         onboarding_view = ft.Container(
             content=ft.Column([
-                ft.Container(height=15),
-                # Glowing Hero Icon
+                ft.Container(height=36),
+                # Logotipo Real de la Aplicación
                 ft.Container(
-                    content=ft.Icon(ft.Icons.SPA_ROUNDED, size=52, color=theme.PRIMARY_LIGHT),
-                    width=96,
-                    height=96,
-                    border_radius=48,
-                    bgcolor=theme.PRIMARY_BG,
-                    border=ft.border.all(2, theme.PRIMARY),
-                    alignment=ft.Alignment(0, 0),
+                    content=ft.Image(
+                        src="icon.png",
+                        width=96,
+                        height=96,
+                        fit=ft.ImageFit.CONTAIN,
+                        border_radius=22,
+                    ),
+                    border_radius=22,
                     shadow=ft.BoxShadow(
-                        blur_radius=25,
+                        blur_radius=28,
                         color=theme.with_opacity(0.35, theme.PRIMARY),
                         offset=ft.Offset(0, 6)
                     ),
                     animate=theme.STANDARD_ANIMATION,
                 ),
-                ft.Container(height=12),
-                ft.Text("Gestor de Calorías", size=24, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY, text_align=ft.TextAlign.CENTER),
-                ft.Container(
-                    content=theme.badge("Edición Gastronomía Regional", icon=ft.Icons.VERIFIED_ROUNDED, bg_color="#064E3B", text_color=theme.PRIMARY_LIGHT, font_size=11),
-                    margin=ft.Margin(0, 2, 0, 4)
-                ),
+                ft.Container(height=18),
+                ft.Text("Gestor de Calorías Regional", size=23, weight=ft.FontWeight.W_800, color=theme.TEXT_PRIMARY, text_align=ft.TextAlign.CENTER),
+                ft.Container(height=8),
                 ft.Text(
-                    "Control nutricional de alta precisión para alimentos del Litoral y tradicionales. Fórmulas científicas Mifflin-St Jeor.", 
-                    color=theme.TEXT_SECONDARY, size=12, text_align=ft.TextAlign.CENTER
+                    "Control nutricional simple y preciso, adaptado a tus hábitos y a los platos tradicionales de nuestra región.", 
+                    color=theme.TEXT_SECONDARY, size=13, text_align=ft.TextAlign.CENTER
                 ),
-                ft.Container(height=10),
-                # Feature Cards Preview
-                ft.Container(
-                    content=ft.Column([
-                        ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=14, color=theme.PRIMARY),
-                            ft.Text("Catálogo: Chipa, Mbeyú, Reviro, Mandioca", size=11, color=theme.TEXT_PRIMARY)
-                        ], spacing=6),
-                        ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=14, color=theme.COLOR_PROTEIN_LIGHT),
-                            ft.Text("Desglose visual de macronutrientes", size=11, color=theme.TEXT_PRIMARY)
-                        ], spacing=6),
-                        ft.Row([
-                            ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, size=14, color=theme.COLOR_WATER_LIGHT),
-                            ft.Text("Registro rápido de hidratación (+250 ml)", size=11, color=theme.TEXT_PRIMARY)
-                        ], spacing=6),
-                    ], spacing=7),
-                    bgcolor=theme.SURFACE,
-                    padding=12,
-                    border_radius=14,
-                    border=ft.border.all(1, theme.SURFACE_BORDER)
-                ),
-                ft.Container(height=12),
+                ft.Container(height=28),
                 ft.ElevatedButton(
                     "Comenzar Ahora", 
                     icon=ft.Icons.ARROW_FORWARD_ROUNDED,
@@ -316,9 +270,9 @@ def main(page: ft.Page):
                     style=theme.get_button_style(), 
                     width=float('inf')
                 ),
-                ft.Container(height=10),
-            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.AUTO),
-            padding=ft.Padding(left=18, top=10, right=18, bottom=10),
+                ft.Container(height=12),
+            ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, scroll=ft.ScrollMode.HIDDEN),
+            padding=ft.Padding(left=24, top=20, right=24, bottom=20),
             expand=True,
             alignment=ft.Alignment(0, 0),
             opacity=0,
@@ -365,15 +319,15 @@ def main(page: ft.Page):
             
         page.run_task(animate_main)
         
-        # Saludo no bloqueante estilizado
+        # Saludo no bloqueante sobrio
         user_name = active_profile.get('name', 'Usuario')
         page.snack_bar = theme.create_snackbar(
             content=ft.Row([
-                ft.Icon(ft.Icons.WAVING_HAND_ROUNDED, color=theme.PRIMARY_LIGHT, size=20),
-                ft.Text(f"¡Bienvenido de nuevo, {user_name}!", size=13, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY)
-            ], spacing=10),
+                ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, color=theme.PRIMARY_LIGHT, size=18),
+                ft.Text(f"Bienvenido de nuevo, {user_name}", size=13, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY)
+            ], spacing=8),
             bgcolor=theme.SURFACE_CARD,
-            duration=3000
+            duration=2500
         )
         page.snack_bar.open = True
         page.update()

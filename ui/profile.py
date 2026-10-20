@@ -3,12 +3,47 @@ import database as db
 from ui import theme
 
 ACTIVITY_FACTORS = {
+    "Sedentario (Poco o nada)": 1.2,
+    "Ligero (1 a 3 días/sem)": 1.375,
+    "Moderado (3 a 5 días/sem)": 1.55,
+    "Intenso (6 a 7 días/sem)": 1.725,
+    "Muy Intenso (Físico diario)": 1.9,
+    # Compatibilidad histórica:
     "Sedentario: poco o nada de ejercicio al día": 1.2,
     "Actividad ligera: ejercicio ligero o deporte 1-3 días a la semana": 1.375,
     "Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana": 1.55,
     "Actividad intensa: ejercicio intenso o deporte 6-7 días a la semana": 1.725,
     "Actividad muy intensa: ejercicio muy intenso o trabajo físico y ejercicio diario": 1.9,
 }
+
+WATER_ACTIVITY_ADDITIONS = {
+    "Sedentario (Poco o nada)": 0,
+    "Ligero (1 a 3 días/sem)": 350,
+    "Moderado (3 a 5 días/sem)": 500,
+    "Intenso (6 a 7 días/sem)": 750,
+    "Muy Intenso (Físico diario)": 1000,
+    # Compatibilidad histórica:
+    "Sedentario: poco o nada de ejercicio al día": 0,
+    "Actividad ligera: ejercicio ligero o deporte 1-3 días a la semana": 350,
+    "Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana": 500,
+    "Actividad intensa: ejercicio intenso o deporte 6-7 días a la semana": 750,
+    "Actividad muy intensa: ejercicio muy intenso o trabajo físico y ejercicio diario": 1000,
+}
+
+def normalize_activity_label(act_str):
+    if not act_str:
+        return "Moderado (3 a 5 días/sem)"
+    if "Sedentario" in act_str:
+        return "Sedentario (Poco o nada)"
+    if "ligera" in act_str.lower() or "Ligero" in act_str:
+        return "Ligero (1 a 3 días/sem)"
+    if "moderada" in act_str.lower() or "Moderado" in act_str:
+        return "Moderado (3 a 5 días/sem)"
+    if "muy intensa" in act_str.lower() or "Muy Intenso" in act_str:
+        return "Muy Intenso (Físico diario)"
+    if "intensa" in act_str.lower() or "Intenso" in act_str:
+        return "Intenso (6 a 7 días/sem)"
+    return "Moderado (3 a 5 días/sem)"
 
 def get_profile_view(page: ft.Page, on_save_callback):
     profiles = db.get_profiles()
@@ -26,8 +61,12 @@ def get_profile_view(page: ft.Page, on_save_callback):
             weight_input.value = ""
             height_input.value = ""
             gender_dropdown.value = "Hombre"
-            activity_dropdown.value = "Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana"
+            activity_dropdown.value = "Moderado (3 a 5 días/sem)"
             goal_dropdown.value = "Mantenimiento"
+            modifier_input.value = "300"
+            current_preset = "300"
+            update_preset_chips()
+            aggressiveness_container.visible = False
             save_btn.visible = True
             macro_info.visible = False
         else:
@@ -49,7 +88,7 @@ def get_profile_view(page: ft.Page, on_save_callback):
         fill_color=theme.SURFACE_VARIANT,
         expand=True
     )
-    profile_dropdown.on_select = on_profile_change
+    profile_dropdown.on_change = on_profile_change
     
     # Referencias de Macros
     macro_cal = ft.Text(f"{active_profile['target_calories'] if active_profile else 0} kcal", size=15, weight=ft.FontWeight.W_800, color=theme.PRIMARY_LIGHT)
@@ -57,18 +96,78 @@ def get_profile_view(page: ft.Page, on_save_callback):
     macro_carbs = ft.Text(f"{int(active_profile['target_carbs']) if active_profile else 0}g", size=15, weight=ft.FontWeight.W_800, color=theme.COLOR_CARBS_LIGHT)
     macro_fat = ft.Text(f"{int(active_profile['target_fat']) if active_profile else 0}g", size=15, weight=ft.FontWeight.W_800, color=theme.COLOR_FAT_LIGHT)
 
+    current_preset = "300"
+
+    def update_preset_chips():
+        for ch, v in [(chip_leve, "300"), (chip_mod, "500"), (chip_agr, "700")]:
+            if current_preset == v:
+                ch.bgcolor = theme.PRIMARY_BG
+                ch.border = ft.border.all(1, theme.PRIMARY)
+                ch.content.color = theme.PRIMARY_LIGHT
+            else:
+                ch.bgcolor = theme.SURFACE_VARIANT
+                ch.border = ft.border.all(1, theme.SURFACE_BORDER)
+                ch.content.color = theme.TEXT_PRIMARY
+
+    def set_aggressiveness_preset(val_str):
+        nonlocal current_preset
+        current_preset = val_str
+        modifier_input.value = val_str
+        update_preset_chips()
+        auto_recalculate()
+
+    chip_leve = ft.Container(
+        content=ft.Text("Leve (300 kcal)", size=11, weight=ft.FontWeight.W_600, color=theme.PRIMARY_LIGHT),
+        padding=ft.Padding(left=10, top=6, right=10, bottom=6),
+        border_radius=12,
+        bgcolor=theme.PRIMARY_BG,
+        border=ft.border.all(1, theme.PRIMARY),
+        on_click=lambda _: set_aggressiveness_preset("300"),
+        animate=theme.STANDARD_ANIMATION,
+    )
+    chip_mod = ft.Container(
+        content=ft.Text("Moderado (500 kcal)", size=11, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY),
+        padding=ft.Padding(left=10, top=6, right=10, bottom=6),
+        border_radius=12,
+        bgcolor=theme.SURFACE_VARIANT,
+        border=ft.border.all(1, theme.SURFACE_BORDER),
+        on_click=lambda _: set_aggressiveness_preset("500"),
+        animate=theme.STANDARD_ANIMATION,
+    )
+    chip_agr = ft.Container(
+        content=ft.Text("Agresivo (700 kcal)", size=11, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY),
+        padding=ft.Padding(left=10, top=6, right=10, bottom=6),
+        border_radius=12,
+        bgcolor=theme.SURFACE_VARIANT,
+        border=ft.border.all(1, theme.SURFACE_BORDER),
+        on_click=lambda _: set_aggressiveness_preset("700"),
+        animate=theme.STANDARD_ANIMATION,
+    )
+
     def auto_recalculate(e=None):
-        if goal_dropdown.value == "Mantenimiento":
-            modifier_input.visible = False
+        nonlocal current_preset
+        goal = goal_dropdown.value
+        if goal == "Mantenimiento":
+            aggressiveness_container.visible = False
         else:
-            modifier_input.visible = True
+            aggressiveness_container.visible = True
+            if not modifier_input.value or modifier_input.value == "0":
+                modifier_input.value = "300"
+                current_preset = "300"
+                update_preset_chips()
+
+        if e and e.control == modifier_input:
+            if modifier_input.value in ["300", "500", "700"]:
+                current_preset = modifier_input.value
+            else:
+                current_preset = "CUSTOM"
+            update_preset_chips()
 
         try:
             w = float(weight_input.value)
             h = float(height_input.value)
             a = int(age_input.value)
             g = gender_dropdown.value
-            goal = goal_dropdown.value
             
             # Fórmula científica Mifflin-St Jeor
             if g == "Hombre":
@@ -82,10 +181,10 @@ def get_profile_view(page: ft.Page, on_save_callback):
             try:
                 mod = int(modifier_input.value)
             except:
-                mod = 500
+                mod = 300
             
             if goal == "Déficit (Perder Grasa)":
-                target_cal = int(tdee - mod)
+                target_cal = max(1000, int(tdee - mod))
             elif goal == "Superávit (Ganar Masa)":
                 target_cal = int(tdee + mod)
             else:
@@ -96,8 +195,9 @@ def get_profile_view(page: ft.Page, on_save_callback):
             carb_cals = target_cal - (target_prot * 4) - (target_fat * 9)
             target_carbs = max(0, carb_cals / 4.0)
             
-            if e and e.control == weight_input:
-                water_input.value = str(int(w * 35))
+            if e and e.control in [weight_input, activity_dropdown]:
+                water_add = WATER_ACTIVITY_ADDITIONS.get(activity_dropdown.value, 500)
+                water_input.value = str(int(w * 35 + water_add))
             
             try: water_g = int(water_input.value)
             except: water_g = 2000
@@ -137,7 +237,7 @@ def get_profile_view(page: ft.Page, on_save_callback):
         fill_color=theme.SURFACE_VARIANT,
         expand=True
     )
-    gender_dropdown.on_select = auto_recalculate
+    gender_dropdown.on_change = auto_recalculate
     
     age_input = ft.TextField(
         **theme.get_input_style("Edad", ft.Icons.CALENDAR_TODAY_ROUNDED), 
@@ -163,7 +263,7 @@ def get_profile_view(page: ft.Page, on_save_callback):
     
     current_goal = active_profile['goal'] if active_profile else "Mantenimiento"
     
-    mod_val = "500"
+    mod_val = "300"
     if active_profile and current_goal != "Mantenimiento":
         try:
             w_val = float(active_profile.get('weight', 0))
@@ -183,22 +283,21 @@ def get_profile_view(page: ft.Page, on_save_callback):
             if mod_calc > 0:
                 mod_val = str(int(mod_calc))
         except Exception:
-            mod_val = "500"
+            mod_val = "300"
 
-    current_activity = active_profile.get('activity_level', 'Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana') if active_profile else "Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana"
-    if current_activity not in ACTIVITY_FACTORS:
-        current_activity = "Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana"
+    raw_activity = active_profile.get('activity_level', '') if active_profile else ''
+    normalized_act = normalize_activity_label(raw_activity)
 
     activity_dropdown = ft.Dropdown(
         label="Nivel de Actividad Física",
         options=[
-            ft.dropdown.Option("Sedentario: poco o nada de ejercicio al día"),
-            ft.dropdown.Option("Actividad ligera: ejercicio ligero o deporte 1-3 días a la semana"),
-            ft.dropdown.Option("Actividad moderada: ejercicio moderado o deporte 3-5 días a la semana"),
-            ft.dropdown.Option("Actividad intensa: ejercicio intenso o deporte 6-7 días a la semana"),
-            ft.dropdown.Option("Actividad muy intensa: ejercicio muy intenso o trabajo físico y ejercicio diario"),
+            ft.dropdown.Option("Sedentario (Poco o nada)"),
+            ft.dropdown.Option("Ligero (1 a 3 días/sem)"),
+            ft.dropdown.Option("Moderado (3 a 5 días/sem)"),
+            ft.dropdown.Option("Intenso (6 a 7 días/sem)"),
+            ft.dropdown.Option("Muy Intenso (Físico diario)"),
         ],
-        value=current_activity,
+        value=normalized_act,
         border_color=theme.SURFACE_BORDER,
         focused_border_color=theme.PRIMARY,
         color=theme.TEXT_PRIMARY,
@@ -206,7 +305,7 @@ def get_profile_view(page: ft.Page, on_save_callback):
         filled=True,
         fill_color=theme.SURFACE_VARIANT,
     )
-    activity_dropdown.on_select = auto_recalculate
+    activity_dropdown.on_change = auto_recalculate
 
     goal_dropdown = ft.Dropdown(
         label="Objetivo Nutricional",
@@ -223,14 +322,28 @@ def get_profile_view(page: ft.Page, on_save_callback):
         filled=True,
         fill_color=theme.SURFACE_VARIANT,
     )
-    goal_dropdown.on_select = auto_recalculate
+    goal_dropdown.on_change = auto_recalculate
     
     modifier_input = ft.TextField(
-        **theme.get_input_style("Ajuste Calórico (+/- Kcal)", ft.Icons.TUNE_ROUNDED), 
+        **theme.get_input_style("Ajuste Calórico (kcal)", ft.Icons.TUNE_ROUNDED), 
         value=mod_val, 
         keyboard_type=ft.KeyboardType.NUMBER,
-        visible=(current_goal != "Mantenimiento"),
         on_change=auto_recalculate
+    )
+
+    if mod_val in ["300", "500", "700"]:
+        current_preset = mod_val
+    else:
+        current_preset = "CUSTOM"
+    update_preset_chips()
+
+    aggressiveness_container = ft.Container(
+        content=ft.Column([
+            ft.Text("Ritmo de Ajuste Calórico", size=12, weight=ft.FontWeight.W_600, color=theme.TEXT_PRIMARY),
+            ft.Row([chip_leve, chip_mod, chip_agr], spacing=6, wrap=True),
+            modifier_input
+        ], spacing=8),
+        visible=(current_goal != "Mantenimiento")
     )
 
     water_input = ft.TextField(
@@ -248,7 +361,9 @@ def get_profile_view(page: ft.Page, on_save_callback):
             g = gender_dropdown.value
             goal = goal_dropdown.value
             try: water_g = int(water_input.value)
-            except: water_g = 2000
+            except: 
+                water_add = WATER_ACTIVITY_ADDITIONS.get(activity_dropdown.value, 500)
+                water_g = int(w * 35 + water_add)
             
             if g == "Hombre":
                 bmr = 10 * w + 6.25 * h - 5 * a + 5
@@ -258,10 +373,10 @@ def get_profile_view(page: ft.Page, on_save_callback):
             factor = ACTIVITY_FACTORS.get(activity_dropdown.value, 1.55)
             tdee = bmr * factor
             try: mod = int(modifier_input.value)
-            except: mod = 500
+            except: mod = 300
             
             if goal == "Déficit (Perder Grasa)":
-                target_cal = int(tdee - mod)
+                target_cal = max(1000, int(tdee - mod))
             elif goal == "Superávit (Ganar Masa)":
                 target_cal = int(tdee + mod)
             else:
@@ -311,19 +426,6 @@ def get_profile_view(page: ft.Page, on_save_callback):
     
     profile_row = ft.Row([profile_dropdown, delete_btn], spacing=6)
 
-    def toggle_theme(e):
-        mode_str = "dark" if e.control.value else "light"
-        db.set_theme_mode(mode_str)
-        page.theme_mode = ft.ThemeMode.DARK if mode_str == "dark" else ft.ThemeMode.LIGHT
-        page.bgcolor = theme.BG_OBSIDIAN if page.theme_mode == ft.ThemeMode.DARK else "#F8FAFC"
-        page.update()
-
-    theme_switch = ft.Switch(
-        label="Modo Obsidiana / Oscuro", 
-        value=page.theme_mode == ft.ThemeMode.DARK,
-        on_change=toggle_theme,
-        active_color=theme.PRIMARY
-    )
 
     # Pastillas resumen de macros calculados
     macro_info = ft.Container(
@@ -360,14 +462,9 @@ def get_profile_view(page: ft.Page, on_save_callback):
         ft.Row([weight_input, height_input], spacing=10),
         activity_dropdown,
         goal_dropdown,
-        modifier_input,
+        aggressiveness_container,
         water_input,
         save_btn,
-        ft.Divider(color=theme.SURFACE_BORDER, height=1),
-        ft.Row([
-            ft.Icon(ft.Icons.DARK_MODE_ROUNDED, color=theme.PRIMARY_LIGHT, size=20), 
-            theme_switch
-        ], alignment=ft.MainAxisAlignment.START, spacing=8)
     ], spacing=12)
     
     # -------------------------------------------------------------
@@ -427,4 +524,4 @@ def get_profile_view(page: ft.Page, on_save_callback):
             **theme.get_card_style(padding=16)
         ),
         chart_container
-    ], expand=True, scroll=ft.ScrollMode.AUTO, spacing=6)
+    ], expand=True, scroll=ft.ScrollMode.HIDDEN, spacing=6)

@@ -118,262 +118,95 @@ def init_db():
     except:
         pass
         
+    try:
+        c.execute('CREATE INDEX IF NOT EXISTS idx_foods_name ON foods(name)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_foods_flags ON foods(is_favorite, is_regional, is_recipe)')
+        c.execute('CREATE INDEX IF NOT EXISTS idx_diary_date ON diary(date, profile_id)')
+    except:
+        pass
+        
     conn.commit()
     conn.close()
     
     seed_regional_foods()
 
-def seed_regional_foods():
-    regional_foods = [
-        ("Mandioca Hervida", 160, 1.4, 38.1, 0.3, 1),
-        ("Sopa Paraguaya", 260, 8.5, 23.0, 15.0, 1),
-        ("Bife Asado (Vaca)", 250, 26.0, 0.0, 17.0, 1),
-        ("Chipa", 320, 10.0, 40.0, 14.0, 1),
-        ("Empanada de Carne (al horno)", 280, 10.0, 30.0, 13.0, 1),
-        ("Guiso de Arroz", 130, 4.0, 20.0, 3.5, 1),
-        ("Mbeyú", 300, 5.0, 45.0, 12.0, 1),
-        ("Puchero", 150, 12.0, 8.0, 8.0, 1),
-        ("Asado (Tira de Asado)", 350, 15.0, 0.0, 32.0, 1),
-        ("Choripán", 290, 12.0, 25.0, 16.0, 1),
-        ("Milanesa de Carne (frita)", 260, 14.0, 22.0, 13.0, 1),
-        ("Milanesa de Carne (al horno)", 220, 15.0, 22.0, 8.0, 1),
-        ("Mandioca Frita", 310, 1.2, 40.0, 16.0, 1),
-        
-        # --- Comidas Regionales (Misiones, Argentina) ---
-        ("Reviro", 350, 6.0, 45.0, 18.0, 1),
-        ("Ticueí (Carne picada frita)", 280, 20.0, 2.0, 22.0, 1),
-        ("Surubí al Horno", 140, 18.0, 0.0, 7.0, 1),
-        ("Pacú a la Parrilla", 180, 20.0, 0.0, 10.0, 1),
-        ("Mate Cocido (con azúcar)", 40, 0.0, 10.0, 0.0, 1),
-        ("Torta Frita", 380, 5.0, 48.0, 20.0, 1),
-        ("Vorí Vorí de Pollo", 120, 10.0, 12.0, 4.0, 1),
-        ("Chipa Guazú", 260, 9.0, 25.0, 14.0, 1),
-        ("Caburé (Chipa Asado)", 330, 11.0, 38.0, 15.0, 1),
-        ("Locro", 180, 8.0, 18.0, 8.0, 1),
-        
-        # --- Alimentos Genéricos (Básicos y Cocina) ---
-        # Harinas y Panadería
-        ("Harina de Trigo (0000)", 364, 10.0, 76.0, 1.0, 0),
-        ("Harina de Trigo Integral", 340, 13.0, 72.0, 2.5, 0),
-        ("Harina de Maíz (Polenta)", 362, 8.0, 77.0, 1.5, 0),
-        ("Avena Tradicional", 389, 16.9, 66.3, 6.9, 0),
-        ("Pan Rallado", 395, 13.0, 75.0, 3.0, 0),
-        ("Pan Lactal Blanco", 265, 8.0, 49.0, 3.0, 0),
-        ("Pan Lactal Integral", 250, 9.0, 43.0, 4.0, 0),
-        ("Pan Francés", 270, 9.0, 50.0, 3.0, 0),
-        ("Galletas de Arroz", 380, 8.0, 80.0, 2.0, 0),
-        
-        # Huevos
-        ("Huevo Entero (Crudo)", 143, 12.5, 0.7, 9.5, 0),
-        ("Huevo Duro", 155, 13.0, 1.1, 11.0, 0),
-        ("Huevo Frito", 196, 13.6, 1.0, 15.0, 0),
-        ("Huevo Revuelto (con aceite)", 210, 14.0, 1.5, 16.0, 0),
-        ("Clara de Huevo (Cruda)", 52, 11.0, 0.7, 0.2, 0),
-        ("Yema de Huevo (Cruda)", 322, 16.0, 3.6, 27.0, 0),
-        ("Omelette (2 huevos)", 170, 12.0, 1.0, 13.0, 0),
-        
-        # Carnes y Aves
-        ("Pechuga de Pollo (Cruda)", 120, 23.0, 0.0, 2.6, 0),
-        ("Pechuga de Pollo (Plancha)", 165, 31.0, 0.0, 3.6, 0),
-        ("Pata/Muslo de Pollo (Horno)", 210, 24.0, 0.0, 12.0, 0),
-        ("Carne Picada Magra", 212, 26.0, 0.0, 11.0, 0),
-        ("Carne Picada Común", 332, 14.0, 0.0, 30.0, 0),
-        ("Bife de Chorizo", 270, 25.0, 0.0, 19.0, 0),
-        ("Milanesa de Carne (Frita)", 260, 14.0, 22.0, 13.0, 0),
-        ("Milanesa de Carne (Horno)", 220, 15.0, 22.0, 8.0, 0),
-        ("Milanesa de Pollo (Frita)", 280, 15.0, 20.0, 15.0, 0),
-        ("Cerdo (Costillita)", 290, 20.0, 0.0, 23.0, 0),
-        ("Bondiola de Cerdo", 310, 16.0, 0.0, 27.0, 0),
-        ("Chorizo Parrillero", 340, 14.0, 2.0, 30.0, 0),
-        ("Salchicha de Viena", 260, 12.0, 3.0, 22.0, 0),
-        ("Hamburguesa (Medallón crudo)", 250, 15.0, 2.0, 20.0, 0),
-        
-        # Pescados
-        ("Atún al Natural (Lata)", 116, 26.0, 0.0, 1.0, 0),
-        ("Atún en Aceite (Lata)", 198, 29.0, 0.0, 8.0, 0),
-        ("Filet de Merluza (Crudo)", 90, 19.0, 0.0, 1.5, 0),
-        ("Filet de Merluza (Frito)", 200, 16.0, 12.0, 10.0, 0),
-        ("Salmón Rosado", 208, 20.0, 0.0, 13.0, 0),
-        
-        # Lácteos y Grasas
-        ("Leche Entera", 61, 3.2, 4.8, 3.3, 0),
-        ("Leche Descremada", 34, 3.4, 5.0, 0.1, 0),
-        ("Yogur Natural", 61, 3.5, 4.7, 3.3, 0),
-        ("Queso Cremoso / Cuartirolo", 300, 14.0, 2.0, 25.0, 0),
-        ("Queso Mozzarella", 300, 22.0, 2.0, 22.0, 0),
-        ("Queso Rallado", 431, 38.0, 4.0, 29.0, 0),
-        ("Queso Untable Clásico", 250, 8.0, 4.0, 23.0, 0),
-        ("Ricota Magra", 100, 11.0, 3.0, 4.0, 0),
-        ("Manteca", 717, 0.8, 0.1, 81.0, 0),
-        ("Crema de Leche", 340, 2.0, 3.0, 36.0, 0),
-        ("Aceite de Girasol", 884, 0.0, 0.0, 100.0, 0),
-        ("Aceite de Oliva", 884, 0.0, 0.0, 100.0, 0),
-        
-        # Cereales y Legumbres
-        ("Arroz Blanco (Crudo)", 360, 7.0, 80.0, 0.6, 0),
-        ("Arroz Blanco (Hervido)", 130, 2.7, 28.0, 0.3, 0),
-        ("Arroz Integral (Hervido)", 111, 2.6, 23.0, 0.9, 0),
-        ("Fideos Secos (Crudos)", 350, 12.0, 70.0, 1.5, 0),
-        ("Fideos (Hervidos)", 130, 4.0, 25.0, 0.5, 0),
-        ("Lentejas (Crudas)", 352, 24.0, 60.0, 1.0, 0),
-        ("Lentejas (Hervidas)", 116, 9.0, 20.0, 0.4, 0),
-        ("Garbanzos (Hervidos)", 164, 8.8, 27.0, 2.5, 0),
-        ("Porotos (Hervidos)", 127, 8.6, 22.0, 0.5, 0),
-        ("Quinoa (Hervida)", 120, 4.4, 21.0, 1.9, 0),
-        
-        # Verduras
-        ("Papa (Cruda)", 77, 2.0, 17.0, 0.1, 0),
-        ("Papa Hervida", 87, 1.9, 20.0, 0.1, 0),
-        ("Papa Frita", 312, 3.4, 41.0, 15.0, 0),
-        ("Batata Hervida", 86, 1.6, 20.1, 0.1, 0),
-        ("Zapallo / Calabaza", 26, 1.0, 6.0, 0.1, 0),
-        ("Tomate Fresco", 18, 0.9, 3.9, 0.2, 0),
-        ("Cebolla Fresca", 40, 1.1, 9.3, 0.1, 0),
-        ("Cebolla Caramelizada / Frita", 120, 1.5, 12.0, 8.0, 0),
-        ("Morrón / Pimiento", 20, 0.9, 4.6, 0.2, 0),
-        ("Ajo", 149, 6.3, 33.0, 0.5, 0),
-        ("Zanahoria Fresca", 41, 0.9, 9.5, 0.2, 0),
-        ("Zanahoria Hervida", 35, 0.8, 8.2, 0.2, 0),
-        ("Lechuga", 15, 1.4, 2.9, 0.2, 0),
-        ("Rúcula", 25, 2.5, 3.6, 0.6, 0),
-        ("Espinaca Fresca", 23, 2.8, 3.6, 0.4, 0),
-        ("Brócoli Hervido", 35, 2.4, 7.2, 0.4, 0),
-        ("Choclo (Maíz dulce)", 86, 3.2, 18.0, 1.1, 0),
-        ("Arvejas (Lata)", 68, 4.0, 12.0, 0.4, 0),
-        
-        # Frutas
-        ("Manzana", 52, 0.3, 14.0, 0.2, 0),
-        ("Banana", 89, 1.1, 23.0, 0.3, 0),
-        ("Naranja", 47, 0.9, 12.0, 0.1, 0),
-        ("Mandarina", 53, 0.8, 13.0, 0.3, 0),
-        ("Palta (Aguacate)", 160, 2.0, 8.5, 14.7, 0),
-        ("Frutilla", 32, 0.6, 7.6, 0.3, 0),
-        ("Limón", 29, 1.1, 9.3, 0.3, 0),
-        ("Uva", 69, 0.7, 18.0, 0.1, 0),
-        ("Durazno", 39, 0.9, 9.5, 0.2, 0),
-        
-        # Azúcares, Condimentos y Otros
-        ("Azúcar Blanca", 387, 0.0, 100.0, 0.0, 0),
-        ("Edulcorante (Polvo/Líquido)", 0, 0.0, 0.0, 0.0, 0),
-        ("Cacao en Polvo Amargo", 228, 19.0, 57.0, 13.0, 0),
-        ("Miel", 304, 0.3, 82.0, 0.0, 0),
-        ("Mayonesa", 680, 1.0, 0.6, 75.0, 0),
-        ("Ketchup", 112, 1.0, 25.0, 0.1, 0),
-        ("Mostaza", 60, 3.0, 5.0, 3.0, 0),
-        ("Salsa de Tomate (Puré)", 38, 1.5, 8.0, 0.2, 0),
-        ("Salsa de Soja", 53, 8.0, 4.0, 0.1, 0),
-        
-        # Snacks y Galletas
-        ("Maní Tostado", 567, 25.8, 16.1, 49.2, 0),
-        ("Almendras", 579, 21.0, 21.0, 49.0, 0),
-        ("Nueces", 654, 15.0, 13.0, 65.0, 0),
-        ("Galletitas de Agua", 414, 10.0, 70.0, 10.0, 0),
-        ("Galletitas de Salvado", 405, 12.0, 65.0, 12.0, 0),
-        ("Galletitas Dulces (Vainilla)", 460, 6.0, 65.0, 20.0, 0),
-        ("Galletitas Pepas (Membrillo)", 410, 5.0, 70.0, 14.0, 0),
-        ("Galletitas Rellenas (tipo Oreo)", 480, 5.0, 68.0, 22.0, 0),
-        ("Galletitas Surtidas", 450, 6.0, 68.0, 18.0, 0),
-        ("Galletitas de Chocolate", 440, 6.0, 70.0, 15.0, 0),
-        ("Vainillas", 360, 8.0, 75.0, 3.0, 0),
-        ("Alfajor de Maicena", 380, 5.0, 55.0, 15.0, 0),
-        ("Dulce de Leche", 315, 7.0, 55.0, 7.0, 0),
-        
-        # --- Bebidas e Infusiones ---
-        ("Agua", 0, 0.0, 0.0, 0.0, 0),
-        ("Gaseosa Cola (Común)", 42, 0.0, 10.6, 0.0, 0),
-        ("Gaseosa Cola (Zero/Diet)", 0, 0.0, 0.0, 0.0, 0),
-        ("Cerveza Rubia", 43, 0.5, 3.6, 0.0, 0),
-        ("Vino Tinto", 85, 0.1, 2.6, 0.0, 0),
-        ("Vino Blanco", 82, 0.1, 2.6, 0.0, 0),
-        ("Jugo de Naranja Exprimid", 45, 0.7, 10.4, 0.2, 0),
-        ("Café (Sin azúcar)", 1, 0.1, 0.0, 0.0, 0),
-        ("Té (Sin azúcar)", 1, 0.0, 0.0, 0.0, 0),
-        ("Mate (Infusión sin azúcar)", 1, 0.0, 0.0, 0.0, 0),
-
-        # --- Comidas Preparadas / Rápidas ---
-        ("Pizza de Muzzarella (1 porción)", 260, 10.0, 30.0, 10.0, 0),
-        ("Empanada de Jamón y Queso (Horno)", 250, 10.0, 25.0, 12.0, 0),
-        ("Tartas (Verdura/Pascualina)", 200, 7.0, 20.0, 10.0, 0),
-        ("Ravioles de Ricota (con salsa)", 210, 8.0, 30.0, 6.0, 0),
-        ("Ñoquis de Papa (con salsa)", 180, 5.0, 32.0, 3.0, 0),
-        ("Sándwich de Milanesa Completo", 650, 30.0, 60.0, 30.0, 0),
-        ("Hamburguesa Completa (Rápida)", 550, 25.0, 45.0, 30.0, 0),
-        ("Papas Fritas de Paquete (Snack)", 536, 6.0, 53.0, 35.0, 0),
-        ("Helado (Crema)", 207, 3.5, 24.0, 11.0, 0),
-        
-        # --- Fiambres y Embutidos ---
-        ("Jamón Cocido", 108, 18.0, 1.5, 3.0, 0),
-        ("Jamón Crudo", 235, 28.0, 0.0, 13.0, 0),
-        ("Salame", 410, 22.0, 1.0, 35.0, 0),
-        ("Mortadela", 311, 14.0, 3.0, 27.0, 0),
-        ("Queso de Máquina (Tybo)", 320, 23.0, 2.0, 24.0, 0),
-        ("Panceta Frita", 541, 37.0, 0.0, 42.0, 0),
-
-        # --- Más Platos Regionales / Tradicionales ---
-        ("Guiso de Fideos", 140, 5.0, 22.0, 4.0, 1),
-        ("Sopa de Verduras", 40, 2.0, 6.0, 1.0, 0),
-        
-        # --- Panadería Dulce y Desayuno ---
-        ("Medialuna de Manteca", 380, 7.0, 48.0, 18.0, 0),
-        ("Medialuna de Grasa", 420, 7.0, 45.0, 24.0, 0),
-        ("Bizcochito de Grasa", 480, 10.0, 50.0, 28.0, 0),
-        ("Churros (sin relleno)", 350, 4.0, 40.0, 20.0, 0),
-        ("Granola (con pasas/almendras)", 470, 10.0, 64.0, 20.0, 0),
-        ("Cereales Azucarados (Copos)", 380, 5.0, 85.0, 1.0, 0),
-        
-        # --- Más Frutas ---
-        ("Ananá (Piña)", 50, 0.5, 13.0, 0.1, 0),
-        ("Sandía", 30, 0.6, 8.0, 0.1, 0),
-        ("Melón", 34, 0.8, 8.0, 0.2, 0),
-        ("Kiwi", 61, 1.1, 15.0, 0.5, 0),
-        ("Ciruela", 46, 0.7, 11.0, 0.3, 0),
-        ("Mango", 60, 0.8, 15.0, 0.4, 0),
-        
-        # --- Más Verduras ---
-        ("Zapallito Verde (Hervido)", 17, 1.0, 3.5, 0.1, 0),
-        ("Berenjena (Al horno)", 35, 1.0, 8.0, 0.2, 0),
-        ("Pepino", 15, 0.6, 3.6, 0.1, 0),
-        ("Coliflor (Hervido)", 23, 1.8, 4.1, 0.5, 0),
-        ("Apio", 16, 0.7, 3.0, 0.2, 0),
-        ("Remolacha (Hervida)", 44, 1.7, 10.0, 0.2, 0),
-        ("Acelga Fresca", 19, 1.8, 3.7, 0.2, 0),
-        
-        # --- Más Pescados y Mariscos ---
-        ("Calamar (Hervido)", 90, 15.0, 3.0, 1.5, 0),
-        ("Rabas (Calamares Fritos)", 250, 14.0, 20.0, 13.0, 0),
-        ("Camarones (Hervidos)", 99, 24.0, 0.0, 0.3, 0),
-        
-        # --- Lácteos, Fiambres y Cortadillos Adicionales ---
-        ("Queso Roquefort / Azul", 353, 21.0, 2.0, 28.0, 0),
-        ("Queso Sardo / Duro", 390, 33.0, 2.0, 28.0, 0),
-        ("Jamón de Pavo / Pechuga", 104, 16.0, 4.0, 2.0, 0),
-        ("Salchicha Parrillera", 340, 14.0, 2.0, 30.0, 0),
-        
-        # --- Más Bebidas y Salsas ---
-        ("Leche Chocolatada", 80, 3.3, 11.0, 2.5, 0),
-        ("Agua con Gas / Soda", 0, 0.0, 0.0, 0.0, 0),
-        ("Jugo en Polvo (Preparado)", 10, 0.0, 2.5, 0.0, 0),
-        ("Salsa Blanca (Bechamel)", 130, 4.0, 9.0, 8.0, 0),
-        ("Salsa Pesto", 450, 5.0, 4.0, 45.0, 0),
-        
-        # --- Legumbres y Otros ---
-        ("Soja Texturizada (Seca)", 350, 50.0, 30.0, 1.5, 0),
-        ("Tofu (Queso de soja)", 76, 8.0, 1.9, 4.8, 0),
-        ("Arepa (Maíz blanco)", 350, 7.0, 75.0, 1.5, 0),
-        ("Tortilla de Trigo (Wrap)", 310, 8.0, 50.0, 8.0, 0),
-    ]
-    
+def reset_and_seed_foods(force=False):
     conn = get_db_connection()
     c = conn.cursor()
-    for f in regional_foods:
-        c.execute('SELECT COUNT(*) FROM foods WHERE name = ?', (f[0],))
-        if c.fetchone()[0] == 0:
-            c.execute('''
-                INSERT INTO foods (name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_regional)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', f)
+    
+    if force:
+        c.execute('DELETE FROM foods')
+        conn.commit()
+
+    c.execute('SELECT COUNT(*) FROM foods')
+    count = c.fetchone()[0]
+    if count > 0 and not force:
+        conn.close()
+        return
+
+    # Catálogo curado: Alimentos comunes y habituales + Regionales de Misiones
+    curated_foods = [
+        # --- REGIONALES (Misiones) (is_regional = 1) ---
+        ("Mandioca hervida", 160, 1.4, 38.0, 0.3, 1),
+        ("Mandioca frita", 310, 1.2, 40.0, 16.0, 1),
+        ("Chipa de almidón (chipa tradicional)", 320, 10.0, 40.0, 14.0, 1),
+        ("Chipa guasú", 260, 9.0, 25.0, 14.0, 1),
+        ("Caburé", 330, 11.0, 38.0, 15.0, 1),
+        ("Reviro tradicional", 350, 6.0, 45.0, 18.0, 1),
+        ("Reviro con huevo", 310, 9.0, 36.0, 15.0, 1),
+        ("Mbeyú", 300, 5.0, 45.0, 12.0, 1),
+        ("Sopa paraguaya", 260, 8.5, 23.0, 15.0, 1),
+        ("Poroto negro hervido", 132, 8.9, 23.7, 0.5, 1),
+        ("Bori bori (Vorí vorí)", 120, 10.0, 12.0, 4.0, 1),
+        ("Torta frita", 380, 5.0, 48.0, 20.0, 1),
+        ("Mate cocido con leche", 45, 2.2, 4.5, 2.0, 1),
+
+        # --- BÁSICOS (is_regional = 0) ---
+        ("Pechuga de pollo", 120, 23.0, 0.0, 2.5, 0),
+        ("Milanesa de pollo al horno", 200, 18.0, 20.0, 6.0, 0),
+        ("Milanesa de carne vacuna al horno", 220, 15.0, 22.0, 8.0, 0),
+        ("Carne picada especial (magra)", 175, 26.0, 0.0, 7.5, 0),
+        ("Carne picada común", 250, 18.0, 0.0, 19.0, 0),
+        ("Bife de nalga / cuadril", 160, 28.0, 0.0, 5.0, 0),
+        ("Costillita de cerdo magra", 190, 23.0, 0.0, 11.0, 0),
+        ("Huevo entero", 143, 12.5, 0.7, 9.5, 0),
+        ("Clara de huevo", 52, 11.0, 0.7, 0.2, 0),
+        ("Arroz blanco", 360, 7.0, 80.0, 0.6, 0),
+        ("Arroz integral", 350, 7.5, 76.0, 2.5, 0),
+        ("Fideos secos", 350, 12.0, 70.0, 1.5, 0),
+        ("Fideos secos integrales", 340, 13.5, 65.0, 2.5, 0),
+        ("Avena tradicional", 389, 16.9, 66.3, 6.9, 0),
+        ("Papa hervida", 87, 1.9, 20.0, 0.1, 0),
+        ("Batata hervida", 86, 1.6, 20.0, 0.1, 0),
+        ("Pan francés", 270, 9.0, 50.0, 3.0, 0),
+        ("Pan de molde integral", 245, 9.5, 43.0, 3.5, 0),
+        ("Leche descremada", 34, 3.4, 5.0, 0.1, 0),
+        ("Leche entera", 61, 3.2, 4.8, 3.3, 0),
+        ("Queso cremoso", 300, 14.0, 2.0, 25.0, 0),
+        ("Queso muzzarella", 300, 22.0, 2.0, 22.0, 0),
+        ("Yogur natural descremado", 45, 4.5, 6.0, 0.5, 0),
+        ("Banana", 89, 1.1, 23.0, 0.3, 0),
+        ("Manzana", 52, 0.3, 14.0, 0.2, 0),
+        ("Naranja", 47, 0.9, 12.0, 0.1, 0),
+        ("Tomate", 18, 0.9, 3.9, 0.2, 0),
+        ("Zanahoria", 41, 0.9, 9.5, 0.2, 0),
+        ("Cebolla", 40, 1.1, 9.3, 0.1, 0),
+        ("Lechuga", 15, 1.4, 2.9, 0.2, 0),
+        ("Aceite de girasol", 884, 0.0, 0.0, 100.0, 0),
+        ("Aceite de oliva", 884, 0.0, 0.0, 100.0, 0),
+        ("Manteca", 717, 0.8, 0.1, 81.0, 0),
+    ]
+
+    for f in curated_foods:
+        c.execute('''
+            INSERT INTO foods (name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g, is_regional)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', f)
     conn.commit()
     conn.close()
+
+def seed_regional_foods():
+    reset_and_seed_foods(force=False)
 
 # --- PROFILE METHODS ---
 def get_profiles():
@@ -481,12 +314,38 @@ def get_weight_logs():
     return [dict(l) for l in logs]
 
 # --- FOOD METHODS ---
-def search_foods(query=""):
+def search_foods(query="", limit=100, offset=0, filter_type="ALL"):
     conn = get_db_connection()
-    if query:
-        foods = conn.execute('SELECT * FROM foods WHERE name LIKE ? ORDER BY is_favorite DESC, name', ('%' + query + '%',)).fetchall()
+    conditions = []
+    params = []
+    
+    clean_query = query.strip() if query else ""
+    if clean_query:
+        conditions.append("name LIKE ?")
+        params.append(f"%{clean_query}%")
+        
+    if filter_type == "REGIONAL":
+        conditions.append("is_regional = 1")
+    elif filter_type == "BASIC":
+        conditions.append("is_regional = 0 AND is_recipe = 0")
+    elif filter_type == "FAVORITES":
+        conditions.append("is_favorite = 1")
+    elif filter_type == "RECIPES":
+        conditions.append("is_recipe = 1")
+        
+    where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+    if filter_type == "ALL":
+        order_clause = "ORDER BY is_favorite DESC, name ASC"
     else:
-        foods = conn.execute('SELECT * FROM foods ORDER BY is_favorite DESC, name').fetchall()
+        order_clause = "ORDER BY is_favorite DESC, is_regional DESC, name ASC"
+    
+    if limit is not None:
+        sql = f"SELECT * FROM foods {where_clause} {order_clause} LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+    else:
+        sql = f"SELECT * FROM foods {where_clause} {order_clause}"
+        
+    foods = conn.execute(sql, params).fetchall()
     conn.close()
     return [dict(f) for f in foods]
 
@@ -596,22 +455,46 @@ def delete_diary_entry(entry_id):
 
 # --- WATER METHODS ---
 def add_water(amount_ml):
+    try:
+        amt = int(amount_ml)
+        if amt <= 0:
+            return
+    except (ValueError, TypeError):
+        return
     pid = get_active_profile_id()
     date_str = get_today_date()
     conn = get_db_connection()
     conn.execute('''
         INSERT INTO water_log (profile_id, date, amount_ml) VALUES (?, ?, ?)
-    ''', (pid, date_str, amount_ml))
+    ''', (pid, date_str, amt))
     conn.commit()
     conn.close()
 
-def get_water_today():
+def get_water_for_date(date_str=None):
+    if not date_str:
+        date_str = get_today_date()
     pid = get_active_profile_id()
-    date_str = get_today_date()
     conn = get_db_connection()
     res = conn.execute('SELECT SUM(amount_ml) FROM water_log WHERE date = ? AND profile_id = ?', (date_str, pid)).fetchone()
     conn.close()
     return res[0] if res[0] else 0
+
+def get_water_today():
+    return get_water_for_date(get_today_date())
+
+def delete_last_water_entry():
+    pid = get_active_profile_id()
+    date_str = get_today_date()
+    conn = get_db_connection()
+    row = conn.execute('SELECT id, amount_ml FROM water_log WHERE profile_id = ? AND date = ? ORDER BY id DESC LIMIT 1', (pid, date_str)).fetchone()
+    if row:
+        conn.execute('DELETE FROM water_log WHERE id = ?', (row['id'],))
+        conn.commit()
+        deleted_amount = row['amount_ml']
+    else:
+        deleted_amount = 0
+    conn.close()
+    return deleted_amount
 
 # --- HISTORY METHODS ---
 def get_historical_summary():

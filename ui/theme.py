@@ -195,8 +195,89 @@ def badge(text, icon=None, bg_color=PRIMARY_BG, text_color=PRIMARY_LIGHT, font_s
 
 def regional_badge():
     """Badge distintivo para platos regionales autóctonos del Litoral/Misiones."""
-    return badge("Regional", icon=ft.Icons.ECO_ROUNDED, bg_color="#064E3B", text_color=PRIMARY_LIGHT)
+    return badge("Regional", icon=ft.Icons.LOCATION_ON_ROUNDED, bg_color="#064E3B", text_color=PRIMARY_LIGHT)
 
 def recipe_badge():
     """Badge para recetas creadas por el usuario."""
     return badge("Receta", icon=ft.Icons.MENU_BOOK_ROUNDED, bg_color="#3B122D", text_color="#F472B6")
+
+# =====================================================================
+# MÁSCARAS DE DIFUMINADO / DESVANECIDO PARA DESPLAZAMIENTO (VIGNETTE)
+# =====================================================================
+
+def fade_scroll_vertical(content, top_fade=False, bottom_fade=True, height=None, border_radius=None):
+    """
+    Aplica una máscara de degradado (ShaderMask) vertical para difuminar suavemente el borde
+    inferior cuando un elemento queda cortado al final, manteniendo el inicio 100% nítido y claro.
+    """
+    colors = []
+    stops = []
+    
+    if top_fade:
+        colors.extend([ft.Colors.TRANSPARENT, ft.Colors.BLACK])
+        stops.extend([0.0, 0.04])
+    else:
+        colors.append(ft.Colors.BLACK)
+        stops.append(0.0)
+        
+    if bottom_fade:
+        colors.extend([ft.Colors.BLACK, ft.Colors.TRANSPARENT])
+        stops.extend([0.96, 1.0])
+    else:
+        colors.append(ft.Colors.BLACK)
+        stops.append(1.0)
+        
+    gradient = ft.LinearGradient(
+        begin=ft.alignment.top_center,
+        end=ft.alignment.bottom_center,
+        colors=colors,
+        stops=stops
+    )
+    
+    mask = ft.ShaderMask(
+        content=content,
+        shader=gradient,
+        blend_mode=ft.BlendMode.DST_IN,
+        border_radius=border_radius,
+        expand=True if height is not None else False
+    )
+    
+    if height is not None:
+        return ft.Container(content=mask, height=height)
+    return mask
+
+def fade_scroll_horizontal(content, left_fade=False, right_fade=True, border_radius=None):
+    """
+    Aplica una máscara de degradado (ShaderMask) horizontal únicamente en el borde
+    derecho donde se corta el chip, manteniendo el inicio completamente nítido.
+    """
+    colors = []
+    stops = []
+    
+    if left_fade:
+        colors.extend([ft.Colors.TRANSPARENT, ft.Colors.BLACK])
+        stops.extend([0.0, 0.04])
+    else:
+        colors.append(ft.Colors.BLACK)
+        stops.append(0.0)
+        
+    if right_fade:
+        colors.extend([ft.Colors.BLACK, ft.Colors.TRANSPARENT])
+        stops.extend([0.91, 1.0])
+    else:
+        colors.append(ft.Colors.BLACK)
+        stops.append(1.0)
+        
+    gradient = ft.LinearGradient(
+        begin=ft.alignment.center_left,
+        end=ft.alignment.center_right,
+        colors=colors,
+        stops=stops
+    )
+    
+    return ft.ShaderMask(
+        content=content,
+        shader=gradient,
+        blend_mode=ft.BlendMode.DST_IN,
+        border_radius=border_radius
+    )
