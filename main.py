@@ -1,4 +1,8 @@
 import flet as ft
+# Compatibilidad hacia adelante para Flet
+if not hasattr(ft, "ImageFit") and hasattr(ft, "BoxFit"):
+    ft.ImageFit = ft.BoxFit
+
 import database as db
 from ui import theme, dashboard, profile, diary, recipes, history, setup
 import platform

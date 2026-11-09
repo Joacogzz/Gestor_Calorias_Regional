@@ -213,7 +213,11 @@ def get_history_view(page: ft.Page, refresh_history):
         
         try:
             d_obj = datetime.datetime.strptime(date_str, '%Y-%m-%d')
-            formatted_date = f"{day_names_es[d_obj.weekday()]}, {d_obj.day:02d} de {months_es[d_obj.month - 1]} {d_obj.year}"
+            current_year = datetime.datetime.now().year
+            if d_obj.year == current_year:
+                formatted_date = f"{day_names_es[d_obj.weekday()]}, {d_obj.day:02d} de {months_es[d_obj.month - 1]}"
+            else:
+                formatted_date = f"{day_names_es[d_obj.weekday()]}, {d_obj.day:02d} de {months_es[d_obj.month - 1]} {d_obj.year}"
         except Exception:
             formatted_date = date_str
             
@@ -378,17 +382,27 @@ def get_history_view(page: ft.Page, refresh_history):
                         )
                     )
 
-        title_widgets = [
-            ft.Row([
-                ft.Icon(ft.Icons.CALENDAR_MONTH_ROUNDED, color=theme.PRIMARY_LIGHT, size=18),
-                ft.Text(formatted_date, size=13, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY),
-            ], spacing=6, expand=True)
-        ]
-        if is_today:
-            title_widgets.append(theme.badge("Hoy", bg_color=theme.PRIMARY, text_color="white", font_size=10))
+        title_header = ft.Container(
+            content=ft.Row([
+                ft.Row([
+                    ft.Icon(ft.Icons.CALENDAR_MONTH_ROUNDED, color=theme.PRIMARY_LIGHT, size=18),
+                    ft.Text(
+                        formatted_date, 
+                        size=12.5, 
+                        weight=ft.FontWeight.W_700, 
+                        color=theme.TEXT_PRIMARY,
+                        expand=True,
+                        max_lines=1,
+                        overflow=ft.TextOverflow.ELLIPSIS
+                    ),
+                ], spacing=6, expand=True, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                *( [theme.badge("Hoy", bg_color=theme.PRIMARY, text_color="white", font_size=10)] if is_today else [] )
+            ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+            width=340
+        )
 
         dlg = ft.AlertDialog(
-            title=ft.Row(title_widgets, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+            title=title_header,
             content=ft.Container(
                 content=ft.Column([
                     metrics_summary,

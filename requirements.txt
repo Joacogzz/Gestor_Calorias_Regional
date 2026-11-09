@@ -1,1 +1,7 @@
-flet
+# Framework principal de interfaz (compatible con controles ElevatedButton, ImageFit y Charts)
+flet==0.26.0
+
+# Generación de documentación y entregables
+python-docx>=1.2.0
+reportlab>=5.1.0
+pillow>=13.0.0

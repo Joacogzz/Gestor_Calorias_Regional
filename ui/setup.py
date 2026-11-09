@@ -1,4 +1,6 @@
 import flet as ft
+if not hasattr(ft, "ImageFit") and hasattr(ft, "BoxFit"):
+    ft.ImageFit = ft.BoxFit
 import database as db
 from ui import theme
 

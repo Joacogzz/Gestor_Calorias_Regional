@@ -5,9 +5,13 @@ from ui import theme
 def get_recipes_view(page: ft.Page):
     recipe_name_input = ft.TextField(
         **theme.get_input_style("Nombre de la Receta", ft.Icons.RESTAURANT_MENU_ROUNDED),
-        hint_text="ej. Guiso de Arroz, Reviro con Huevo",
-        expand=True
+        hint_text="ej. Guiso de Arroz, Reviro con Huevo"
     )
+    def on_name_change(e):
+        if recipe_name_input.error_text:
+            recipe_name_input.error_text = None
+            recipe_name_input.update()
+    recipe_name_input.on_change = on_name_change
     portions_input = ft.TextField(
         **theme.get_input_style("Porciones", ft.Icons.PIE_CHART_ROUNDED), 
         value="1", 
@@ -27,7 +31,7 @@ def get_recipes_view(page: ft.Page):
         **theme.get_input_style("Buscar ingrediente para la receta", ft.Icons.SEARCH_ROUNDED), 
         expand=True
     )
-    results_list = ft.ListView(height=150, spacing=6)
+    results_list = ft.ListView(expand=True, spacing=6)
     ingredients_list = ft.ListView(height=160, spacing=8)
     my_recipes_list = ft.ListView(height=240, spacing=8)
     
@@ -220,6 +224,8 @@ def get_recipes_view(page: ft.Page):
             )
         page.update()
 
+    search_input.on_submit = search_click
+
     def open_add_dialog(f_data):
         is_liquid = any(word in f_data['name'].lower() for word in ['aceite', 'leche', 'yogur', 'salsa', 'jugo', 'agua', 'miel', 'crema'])
         unit = "ml" if is_liquid else "g"
@@ -231,18 +237,52 @@ def get_recipes_view(page: ft.Page):
             value="100"
         )
         cooking_factor_cb = ft.Checkbox(
-            label="Aplicar merma por cocción (-25% peso)", 
             value=False, 
             fill_color=theme.PRIMARY,
-            label_style=ft.TextStyle(color=theme.TEXT_PRIMARY, size=12)
+        )
+
+        def on_cb_change(e=None):
+            is_active = bool(cooking_factor_cb.value)
+            merma_card.border = ft.border.all(1.5, theme.PRIMARY if is_active else theme.SURFACE_BORDER)
+            merma_card.bgcolor = theme.with_opacity(0.12, theme.PRIMARY) if is_active else theme.SURFACE_VARIANT
+            merma_card.update()
+
+        cooking_factor_cb.on_change = on_cb_change
+
+        def toggle_merma(e=None):
+            cooking_factor_cb.value = not cooking_factor_cb.value
+            cooking_factor_cb.update()
+            on_cb_change()
+
+        merma_card = ft.Container(
+            content=ft.Row([
+                cooking_factor_cb,
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text("Merma por cocción", size=13, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY),
+                        ft.Text(
+                            "Reduce 25% de peso al evaporar agua (carnes y vegetales).",
+                            size=11, 
+                            color=theme.TEXT_SECONDARY
+                        ),
+                    ], spacing=2),
+                    expand=True,
+                    on_click=toggle_merma
+                )
+            ], vertical_alignment=ft.CrossAxisAlignment.CENTER, spacing=4),
+            bgcolor=theme.SURFACE_VARIANT,
+            padding=ft.Padding(left=4, top=10, right=10, bottom=10),
+            border_radius=12,
+            border=ft.border.all(1, theme.SURFACE_BORDER),
+            animate=theme.STANDARD_ANIMATION,
         )
         
-        def confirm_add(e):
+        def confirm_add(e=None):
             try:
                 g = float(amount_input.value)
                 if g <= 0:
                     amount_input.error_text = "Ingresa una cantidad mayor a 0"
-                    page.update()
+                    amount_input.update()
                     return
                 current_ingredients.append({
                     'food': f_data, 
@@ -250,11 +290,24 @@ def get_recipes_view(page: ft.Page):
                     'apply_cooking_factor': cooking_factor_cb.value
                 })
                 dlg.open = False
-                page.update()
                 render_ingredients()
+                search_input.value = ""
+                search_click(None)
+                page.snack_bar = theme.create_snackbar(
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, color=theme.PRIMARY_LIGHT, size=18),
+                        ft.Text(f"¡{f_data['name']} añadido a la preparación!", size=13, color=theme.TEXT_PRIMARY)
+                    ], spacing=8),
+                    bgcolor=theme.SURFACE_CARD,
+                    duration=2000
+                )
+                page.snack_bar.open = True
+                page.update()
             except ValueError:
                 amount_input.error_text = "Ingresa un número válido"
-                page.update()
+                amount_input.update()
+
+        amount_input.on_submit = confirm_add
 
         def close_dlg(ev=None):
             dlg.open = False
@@ -262,25 +315,23 @@ def get_recipes_view(page: ft.Page):
             
         dlg = ft.AlertDialog(
             title=ft.Row([
-                ft.Icon(ft.Icons.ADD_ROUNDED, color=theme.PRIMARY_LIGHT),
-                ft.Text(f"Añadir {f_data['name']}", size=16, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY)
+                ft.Icon(ft.Icons.ADD_ROUNDED, color=theme.PRIMARY_LIGHT, size=20),
+                ft.Text(f"Añadir {f_data['name']}", size=15, weight=ft.FontWeight.W_700, color=theme.TEXT_PRIMARY, expand=True, max_lines=1, overflow=ft.TextOverflow.ELLIPSIS)
             ], spacing=8),
-            content=ft.Column([
-                amount_input, 
-                ft.Container(
-                    content=ft.Column([
-                        cooking_factor_cb,
-                        ft.Text("Para carnes y vegetales que evaporan agua al freír o hervir.", size=10, color=theme.TEXT_MUTED)
-                    ], spacing=2),
-                    bgcolor=theme.SURFACE_VARIANT,
-                    padding=10,
-                    border_radius=10
-                )
-            ], tight=True, spacing=10),
+            content=ft.Container(
+                content=ft.Column([
+                    amount_input, 
+                    merma_card
+                ], tight=True, spacing=12),
+                width=320
+            ),
+            inset_padding=ft.Padding(16, 24, 16, 24),
+            content_padding=ft.Padding(18, 16, 18, 16),
             actions=[
                 ft.TextButton("Cancelar", on_click=close_dlg),
                 ft.ElevatedButton("Agregar a Receta", on_click=confirm_add, style=theme.get_button_style()),
             ],
+            actions_alignment=ft.MainAxisAlignment.END,
             bgcolor=theme.SURFACE_CARD
         )
         page.overlay.append(dlg)
@@ -288,19 +339,36 @@ def get_recipes_view(page: ft.Page):
         page.update()
 
     def save_recipe_click(e):
-        if not recipe_name_input.value:
-            page.snack_bar = theme.create_snackbar(ft.Text("Ingresa un nombre para tu receta"), bgcolor=theme.DANGER_BG)
+        name = (recipe_name_input.value or "").strip()
+        if not name:
+            recipe_name_input.error_text = "Ingresa un nombre para tu receta"
+            page.snack_bar = theme.create_snackbar(
+                content=ft.Row([
+                    ft.Icon(ft.Icons.WARNING_ROUNDED, color=theme.DANGER_LIGHT, size=18),
+                    ft.Text("Por favor, ingresa un nombre para la receta.", size=13, color=theme.TEXT_PRIMARY)
+                ], spacing=8),
+                bgcolor=theme.DANGER_BG
+            )
             page.snack_bar.open = True
+            recipe_name_input.update()
             page.update()
             return
+        else:
+            recipe_name_input.error_text = None
             
         if not current_ingredients:
-            page.snack_bar = theme.create_snackbar(ft.Text("Agrega al menos un ingrediente a la receta"), bgcolor=theme.DANGER_BG)
+            page.snack_bar = theme.create_snackbar(
+                content=ft.Row([
+                    ft.Icon(ft.Icons.WARNING_ROUNDED, color=theme.DANGER_LIGHT, size=18),
+                    ft.Text("Agrega al menos un ingrediente a la receta antes de guardar.", size=13, color=theme.TEXT_PRIMARY)
+                ], spacing=8),
+                bgcolor=theme.DANGER_BG
+            )
             page.snack_bar.open = True
             page.update()
             return
 
-        total_cal, total_prot, total_carb, total_fat = 0, 0, 0, 0
+        total_cal, total_prot, total_carb, total_fat = 0.0, 0.0, 0.0, 0.0
         for ing in current_ingredients:
             factor = ing['amount_g'] / 100.0
             total_cal += ing['food']['calories_per_100g'] * factor
@@ -310,36 +378,40 @@ def get_recipes_view(page: ft.Page):
             
         try:
             p = float(portions_input.value)
-            if p <= 0: p = 1
+            if p <= 0: p = 1.0
         except:
-            p = 1
+            p = 1.0
             
         name_suffix = f" (1 de {int(p)} porciones)" if p > 1 else " (1 porción)"
+        full_recipe_name = f"{name}{name_suffix}"
         db.save_recipe(
-            recipe_name_input.value + name_suffix, 
-            total_cal / p, 
-            total_prot / p, 
-            total_carb / p, 
-            total_fat / p
+            full_recipe_name, 
+            round(total_cal / p, 1), 
+            round(total_prot / p, 1), 
+            round(total_carb / p, 1), 
+            round(total_fat / p, 1)
         )
         
         page.snack_bar = theme.create_snackbar(
             content=ft.Row([
                 ft.Icon(ft.Icons.CHECK_CIRCLE_ROUNDED, color=theme.PRIMARY_LIGHT, size=18),
-                ft.Text(f"¡Receta '{recipe_name_input.value}' guardada con éxito!", size=13, color=theme.TEXT_PRIMARY)
+                ft.Text(f"¡Receta '{name}' guardada con éxito!", size=13, color=theme.TEXT_PRIMARY)
             ], spacing=8),
             bgcolor=theme.SURFACE_CARD,
             duration=3000
         )
         page.snack_bar.open = True
-        page.update()
         
         # Resetear formulario
         recipe_name_input.value = ""
+        recipe_name_input.error_text = None
         portions_input.value = "1"
         current_ingredients.clear()
+        search_input.value = ""
         render_ingredients()
         render_my_recipes()
+        search_click(None)
+        page.update()
 
     # -------------------------------------------------------------
     # 4. MIS RECETAS CREADAS
@@ -404,6 +476,7 @@ def get_recipes_view(page: ft.Page):
     def delete_recipe_click(recipe_id):
         db.delete_recipe(recipe_id)
         render_my_recipes()
+        search_click(None)
         page.snack_bar = theme.create_snackbar(ft.Text("Receta eliminada del catálogo."), bgcolor=theme.SURFACE_CARD)
         page.snack_bar.open = True
         page.update()
@@ -445,17 +518,20 @@ def get_recipes_view(page: ft.Page):
                         style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=12))
                     )
                 ], spacing=6),
-                ft.Container(content=results_list, height=270),
+                ft.Container(content=results_list, height=210),
                 theme.subheader_text("Ingredientes Agregados"),
-                ft.Container(content=ingredients_list, height=150),
+                ft.Container(content=ingredients_list, height=160),
                 summary_two_columns,
-                ft.ElevatedButton(
-                    "Guardar Receta en Catálogo", 
-                    icon=ft.Icons.SAVE_ROUNDED, 
-                    on_click=save_recipe_click, 
-                    style=theme.get_button_style(), 
-                    width=float('inf')
-                )
+                ft.Row([
+                    ft.ElevatedButton(
+                        "Guardar Receta en Catálogo", 
+                        icon=ft.Icons.SAVE_ROUNDED, 
+                        on_click=save_recipe_click, 
+                        style=theme.get_button_style(), 
+                        height=48,
+                        expand=True
+                    )
+                ])
             ], spacing=10),
             **theme.get_card_style(padding=16)
         ),
@@ -540,6 +616,7 @@ def get_recipes_view(page: ft.Page):
     def delete_food_click(food_id):
         db.delete_custom_food(food_id)
         render_custom_foods()
+        search_click(None)
         page.snack_bar = theme.create_snackbar(ft.Text("Alimento eliminado."), bgcolor=theme.SURFACE_CARD)
         page.snack_bar.open = True
         page.update()
@@ -561,6 +638,7 @@ def get_recipes_view(page: ft.Page):
                     msg = "Alimento creado con éxito."
                 dlg.open = False
                 render_custom_foods()
+                search_click(None)
                 page.snack_bar = theme.create_snackbar(ft.Text(msg), bgcolor=theme.SURFACE_CARD)
                 page.snack_bar.open = True
                 page.update()
@@ -618,6 +696,8 @@ def get_recipes_view(page: ft.Page):
             tab_recetas_text.color = "#FFFFFF"
             tab_alimentos.bgcolor = "transparent"
             tab_alimentos_text.color = theme.TEXT_SECONDARY
+            if not results_list.controls:
+                search_click(None)
         else:
             content_container.content = foods_content
             tab_alimentos.bgcolor = theme.PRIMARY
